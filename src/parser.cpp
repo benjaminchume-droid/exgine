@@ -1,15 +1,16 @@
 #include "exgine/ast.hpp"
 
 #include <cstdlib>
+#include <optional>
 #include <string>
+#include <utility>
 
 namespace exgine {
 namespace {
 
 class ParserImpl {
 public:
-    ParserImpl(const std::vector<Token>& tokens, DiagnosticBag& diagnostics)
-        : tokens_(tokens), diagnostics_(diagnostics) {}
+    ParserImpl(const std::vector<Token>& tokens, DiagnosticBag& diagnostics) : tokens_(tokens), diagnostics_(diagnostics) {}
 
     AstDocument parse() {
         AstDocument document;
@@ -30,16 +31,13 @@ private:
     std::size_t current_ = 0;
 
     const Token& peek() const { return tokens_[current_]; }
+    const Token& peek_next() const { return current_ + 1 < tokens_.size() ? tokens_[current_ + 1] : tokens_.back(); }
     const Token& previous() const { return tokens_[current_ - 1]; }
     bool check(TokenKind kind) const { return peek().kind == kind; }
     const Token& advance() { if (!check(TokenKind::EndOfFile)) ++current_; return previous(); }
     bool match(TokenKind kind) { if (!check(kind)) return false; advance(); return true; }
-
     void error_here(const std::string& message) { diagnostics_.error(message, peek().location); }
-    void recover_to(TokenKind kind) {
-        while (!check(kind) && !check(TokenKind::EndOfFile)) advance();
-    }
-
+    void recover_to(TokenKind kind) { while (!check(kind) && !check(TokenKind::EndOfFile)) advance(); }
     const Token* consume(TokenKind kind, const char* message) {
         if (check(kind)) return &advance();
         error_here(message);
@@ -71,27 +69,31 @@ private:
         }
     }
 
+    bool starts_node() const {
+        return check(TokenKind::World) || check(TokenKind::Terrain) || check(TokenKind::Vegetation) ||
+               check(TokenKind::Building) || check(TokenKind::Vehicle);
+    }
+
     std::optional<AstNode> parse_node() {
-        const Token start = peek();
-        const bool known = start.kind == TokenKind::World || start.kind == TokenKind::Terrain ||
-                           start.kind == TokenKind::Vegetation || start.kind == TokenKind::Building ||
-                           start.kind == TokenKind::Vehicle;
-        if (!known) { error_here("expected a world, terrain, vegetation, building, or vehicle block"); advance(); return std::nullopt; }
-        advance();
+        if (!starts_node()) {
+            error_here("expected a world, terrain, vegetation, building, or vehicle block");
+            advance();
+            return std::nullopt;
+        }
+        const Token start = advance();
         AstNode node{node_kind(start.kind), {}, {}, {}, start.location};
         if (check(TokenKind::String) || check(TokenKind::Identifier)) node.name = advance().lexeme;
         if (!consume(TokenKind::LeftBrace, "expected '{' after node declaration")) return node;
         while (!check(TokenKind::RightBrace) && !check(TokenKind::EndOfFile)) {
-            if (check(TokenKind::Identifier) || check(TokenKind::Terrain) || check(TokenKind::Vegetation) ||
-                check(TokenKind::Building) || check(TokenKind::Vehicle) || check(TokenKind::World)) {
-                const std::size_t before = current_;
+            if (starts_node()) {
                 auto child = parse_node();
                 if (child.has_value()) node.children.push_back(std::move(*child));
-                if (current_ == before) advance();
-                continue;
+            } else if (check(TokenKind::Identifier) && peek_next().kind == TokenKind::Equals) {
+                parse_property(node);
+            } else {
+                error_here("expected property assignment or child block");
+                advance();
             }
-            if (check(TokenKind::Identifier)) parse_property(node);
-            else { error_here("expected property assignment or child block"); advance(); }
         }
         consume(TokenKind::RightBrace, "expected '}' at end of node");
         return node;
