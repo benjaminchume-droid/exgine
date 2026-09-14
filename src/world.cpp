@@ -6,9 +6,11 @@ namespace exgine {
 
 ProceduralWorld::ProceduralWorld(TerrainConfig config) : config_(config) {}
 
-float ProceduralWorld::sample_height(int64_t world_x, int64_t world_z) const {
-    // Deterministic, dependency-free prototype noise. This is intentionally
-    // simple; a real generator will replace it with layered noise/octaves.
+float ProceduralWorld::sample_height(std::int64_t world_x,
+                                     std::int64_t world_z) const noexcept {
+    // Phase 0 deliberately keeps generation dependency-free and deterministic.
+    // The production terrain generator will be introduced in Phase 3 without
+    // changing the public world sampling contract.
     const double x = static_cast<double>(world_x) * 0.035;
     const double z = static_cast<double>(world_z) * 0.035;
     const double seed = static_cast<double>(config_.seed) * 0.001;
