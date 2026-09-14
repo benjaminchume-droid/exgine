@@ -36,11 +36,20 @@ void test_diagnostics() {
 void test_ir() {
     exgine::IR game;
     game.add_property("terrain", std::string{"procedural"});
-    game.add_property("terrain_height", int64_t{20});
+    game.add_property("terrain_height", std::int64_t{20});
+
+    auto& building = game.add_child(exgine::NodeKind::Building, "house");
+    building.properties.push_back({"floors", std::int64_t{2}});
 
     assert(game.root.kind == exgine::NodeKind::World);
     assert(game.root.name == "world");
     assert(game.root.properties.size() == 2);
+    assert(game.root.children.size() == 1);
+    assert(game.root.children[0].name == "house");
+    assert(std::get<std::int64_t>(*game.root.children[0].find_property("floors")
+                                      ? game.root.children[0].find_property("floors")->value
+                                      : exgine::PropertyValue{0}) == 2);
+    assert(game.root.find_property("missing") == nullptr);
 }
 
 void test_world_determinism() {
