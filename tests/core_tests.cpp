@@ -77,10 +77,11 @@ void test_compiler_pipeline() {
     assert(result.succeeded());
     assert(result.ir.has_value());
     assert(result.ir->root.kind == exgine::NodeKind::World);
+    assert(result.ir->root.name == "world");
     assert(result.ir->root.children.size() == 3);
     assert(result.ir->root.children[0].kind == exgine::NodeKind::Terrain);
     assert(result.ir->root.children[1].name == "house");
-    assert(std::get<std::int64_t>(*result.ir->root.children[1].find_property("floors")).value == 2);
+    assert(std::get<std::int64_t>(result.ir->root.children[1].find_property("floors")->value) == 2);
 }
 
 void test_semantic_rejection() {
