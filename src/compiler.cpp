@@ -55,6 +55,7 @@ CompileResult Compiler::compile(SourceText source) const {
     for (const auto& ast_node : game.nodes) {
         if (ast_node.kind == AstNodeKind::World) {
             ir.root = lower_node(ast_node);
+            if (ir.root.name.empty()) ir.root.name = "world";
             break;
         }
     }
