@@ -74,6 +74,21 @@ private:
                check(TokenKind::Building) || check(TokenKind::Vehicle);
     }
 
+    bool starts_property() const {
+        switch (peek().kind) {
+        case TokenKind::Identifier:
+        case TokenKind::Terrain:
+        case TokenKind::Vegetation:
+        case TokenKind::Building:
+        case TokenKind::Vehicle:
+        case TokenKind::Procedural:
+        case TokenKind::World:
+            return peek_next().kind == TokenKind::Equals;
+        default:
+            return false;
+        }
+    }
+
     std::optional<AstNode> parse_node() {
         if (!starts_node()) {
             error_here("expected a world, terrain, vegetation, building, or vehicle block");
@@ -85,10 +100,10 @@ private:
         if (check(TokenKind::String) || check(TokenKind::Identifier)) node.name = advance().lexeme;
         if (!consume(TokenKind::LeftBrace, "expected '{' after node declaration")) return node;
         while (!check(TokenKind::RightBrace) && !check(TokenKind::EndOfFile)) {
-            if (starts_node()) {
+            if (starts_node() && !starts_property()) {
                 auto child = parse_node();
                 if (child.has_value()) node.children.push_back(std::move(*child));
-            } else if (check(TokenKind::Identifier) && peek_next().kind == TokenKind::Equals) {
+            } else if (starts_property()) {
                 parse_property(node);
             } else {
                 error_here("expected property assignment or child block");
