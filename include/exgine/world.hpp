@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
 
 namespace exgine {
 
@@ -15,8 +14,8 @@ class ProceduralWorld {
 public:
     explicit ProceduralWorld(TerrainConfig config = {});
 
-    float sample_height(int64_t world_x, int64_t world_z) const;
-    const TerrainConfig& config() const noexcept { return config_; }
+    [[nodiscard]] float sample_height(std::int64_t world_x, std::int64_t world_z) const noexcept;
+    [[nodiscard]] const TerrainConfig& config() const noexcept { return config_; }
 
 private:
     TerrainConfig config_;
