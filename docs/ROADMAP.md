@@ -8,15 +8,15 @@ Establish the project contracts: C++20 build, public API boundaries, diagnostics
 
 **Checkpoint:** full-tree structural audit + clean build + automated tests.
 
-## Phase 1 — Language
+## Phase 1 — Language — IMPLEMENTED
 
 Build the real EXGINE source pipeline:
 
 `source -> lexer -> parser -> AST -> semantic validation -> IR`
 
-The language must support nested blocks, properties, values, diagnostics, and future extension without hardcoding individual examples.
+The language now supports nested blocks, properties, typed scalar values, comments, string escapes, source locations, parser recovery, semantic validation, and a single public compiler entry point.
 
-**Checkpoint:** complete sample programs compile into validated IR and invalid programs produce useful diagnostics.
+**Checkpoint:** implemented end-to-end tests compile complete sample programs into validated IR and reject malformed/invalid programs through diagnostics. External CI status must still be green-verified before the checkpoint is formally signed off.
 
 ## Phase 2 — Runtime
 
