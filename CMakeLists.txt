@@ -11,32 +11,24 @@ add_library(exgine_core
     src/diagnostic.cpp
     src/ir.cpp
     src/world.cpp
+    src/token.cpp
+    src/lexer.cpp
+    src/parser.cpp
+    src/semantic.cpp
+    src/compiler.cpp
 )
 
-target_include_directories(exgine_core
-    PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
+target_include_directories(exgine_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(exgine_core PUBLIC cxx_std_20)
-
 target_compile_options(exgine_core PRIVATE
     $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic>
     $<$<CXX_COMPILER_ID:MSVC>:/W4>
 )
 
-add_executable(exgine_demo
-    examples/hello_world.cpp
-)
-
+add_executable(exgine_demo examples/hello_world.cpp)
 target_link_libraries(exgine_demo PRIVATE exgine_core)
 
 enable_testing()
-
-add_executable(exgine_core_tests
-    tests/core_tests.cpp
-)
-
+add_executable(exgine_core_tests tests/core_tests.cpp)
 target_link_libraries(exgine_core_tests PRIVATE exgine_core)
-
 add_test(NAME exgine_core_tests COMMAND exgine_core_tests)
