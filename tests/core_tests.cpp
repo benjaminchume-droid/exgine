@@ -46,9 +46,10 @@ void test_ir() {
     assert(game.root.properties.size() == 2);
     assert(game.root.children.size() == 1);
     assert(game.root.children[0].name == "house");
-    assert(std::get<std::int64_t>(*game.root.children[0].find_property("floors")
-                                      ? game.root.children[0].find_property("floors")->value
-                                      : exgine::PropertyValue{0}) == 2);
+
+    const auto* floors = game.root.children[0].find_property("floors");
+    assert(floors != nullptr);
+    assert(std::get<std::int64_t>(floors->value) == 2);
     assert(game.root.find_property("missing") == nullptr);
 }
 
