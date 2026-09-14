@@ -3,6 +3,7 @@
 #include <cctype>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace exgine {
 namespace {
@@ -23,11 +24,9 @@ TokenKind keyword_kind(std::string_view word) {
 
 std::vector<Token> Lexer::tokenize(DiagnosticBag& diagnostics) const {
     std::vector<Token> tokens;
-    std::size_t i = 0;
-    std::size_t line = 1;
-    std::size_t column = 1;
+    std::size_t i = 0, line = 1, column = 1;
 
-    const auto advance = [&](std::size_t count = 1) mutable {
+    const auto advance = [&](std::size_t count = 1) {
         for (std::size_t n = 0; n < count && i < source_.size(); ++n) {
             if (source_.at(i) == '\n') { ++line; column = 1; }
             else { ++column; }
@@ -43,8 +42,8 @@ std::vector<Token> Lexer::tokenize(DiagnosticBag& diagnostics) const {
             while (i < source_.size() && source_.at(i) != '\n') advance();
             continue;
         }
-
         const SourceLocation start = location();
+
         if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') {
             const std::size_t begin = i;
             while (std::isalnum(static_cast<unsigned char>(source_.at(i))) || source_.at(i) == '_') advance();
@@ -78,10 +77,7 @@ std::vector<Token> Lexer::tokenize(DiagnosticBag& diagnostics) const {
             while (i < source_.size()) {
                 const char ch = source_.at(i);
                 if (ch == '"') { advance(); closed = true; break; }
-                if (ch == '\n') {
-                    diagnostics.error("unterminated string literal", start);
-                    break;
-                }
+                if (ch == '\n') { diagnostics.error("unterminated string literal", start); break; }
                 if (ch == '\\') {
                     advance();
                     if (i >= source_.size()) break;
