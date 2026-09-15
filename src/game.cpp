@@ -7,220 +7,25 @@
 
 namespace exgine {
 namespace {
-std::string trim(std::string s) {
-    const auto first = s.find_first_not_of(" \t\r\n");
-    if (first == std::string::npos) return {};
-    const auto last = s.find_last_not_of(" \t\r\n");
-    return s.substr(first, last - first + 1);
+std::string trim(std::string s) { const auto first=s.find_first_not_of(" \t\r\n"); if(first==std::string::npos)return {}; const auto last=s.find_last_not_of(" \t\r\n"); return s.substr(first,last-first+1); }
+std::vector<std::string> split(std::string_view value,char separator){std::vector<std::string> out;std::size_t start=0;while(start<=value.size()){const auto end=value.find(separator,start);out.emplace_back(trim(std::string(value.substr(start,end==std::string_view::npos?end:end-start))));if(end==std::string_view::npos)break;start=end+1;}return out;}
+bool u32(std::string_view s,std::uint32_t& value){std::uint32_t v=0;const auto r=std::from_chars(s.data(),s.data()+s.size(),v);if(r.ec!=std::errc{}||r.ptr!=s.data()+s.size())return false;value=v;return true;}
+bool f32(std::string_view s,float& value){try{value=std::stof(std::string{s});return std::isfinite(value);}catch(...){return false;}}
+bool f64(std::string_view s,double& value){try{value=std::stod(std::string{s});return std::isfinite(value);}catch(...){return false;}}
+GameAssetKind asset_kind(std::string_view s){if(s=="scene")return GameAssetKind::Scene;if(s=="world")return GameAssetKind::World;if(s=="script")return GameAssetKind::Script;if(s=="material")return GameAssetKind::Material;return GameAssetKind::Generic;}
+std::string asset_kind_name(GameAssetKind k){switch(k){case GameAssetKind::Scene:return "scene";case GameAssetKind::World:return "world";case GameAssetKind::Script:return "script";case GameAssetKind::Material:return "material";default:return "generic";}}
 }
-std::vector<std::string> split(std::string_view value, char separator) {
-    std::vector<std::string> out;
-    std::size_t start = 0;
-    while (start <= value.size()) {
-        const auto end = value.find(separator, start);
-        out.emplace_back(trim(std::string(value.substr(start, end == std::string_view::npos ? end : end - start))));
-        if (end == std::string_view::npos) break;
-        start = end + 1;
-    }
-    return out;
+bool GameProject::valid()const noexcept{if(name.empty()||version.empty()||tick_rate==0||!calendar.valid())return false;if(!startup_scene.empty()&&std::find(scene_names.begin(),scene_names.end(),startup_scene)==scene_names.end())return false;for(const auto&a:assets)if(!a.valid())return false;return true;}
+GameProjectLoadResult parse_project(std::string_view source){GameProjectLoadResult result;CalendarConfig calendar;std::istringstream in(std::string{source});std::string line;std::size_t line_no=0;while(std::getline(in,line)){++line_no;line=trim(line);if(line.empty()||line.front()=='#')continue;const auto eq=line.find('=');if(eq==std::string::npos){result.error="project line "+std::to_string(line_no)+" requires '='";return result;}const auto key=trim(line.substr(0,eq));const auto value=trim(line.substr(eq+1));if(key=="name")result.project.name=value;else if(key=="version")result.project.version=value;else if(key=="startup_scene")result.project.startup_scene=value;else if(key=="tick_rate"){if(!u32(value,result.project.tick_rate)){result.error="invalid tick_rate";return result;}}else if(key=="seconds_per_day"){if(!f64(value,calendar.seconds_per_day)){result.error="invalid seconds_per_day";return result;}}else if(key=="days_per_year"){if(!u32(value,calendar.days_per_year)){result.error="invalid days_per_year";return result;}}else if(key=="days_per_week"){if(!u32(value,calendar.days_per_week)){result.error="invalid days_per_week";return result;}}else if(key=="dawn_start"){if(!f32(value,calendar.dawn_start)){result.error="invalid dawn_start";return result;}}else if(key=="dawn_end"){if(!f32(value,calendar.dawn_end)){result.error="invalid dawn_end";return result;}}else if(key=="dusk_start"){if(!f32(value,calendar.dusk_start)){result.error="invalid dusk_start";return result;}}else if(key=="dusk_end"){if(!f32(value,calendar.dusk_end)){result.error="invalid dusk_end";return result;}}else if(key=="season"){const auto p=split(value,',');if(p.size()!=6){result.error="season requires name,start_day,length_days,temperature,vegetation,daylight";return result;}SeasonDefinition s;s.name=p[0];if(!u32(p[1],s.start_day)||!u32(p[2],s.length_days)||!f32(p[3],s.temperature_bias)||!f32(p[4],s.vegetation_factor)||!f32(p[5],s.daylight_factor)||!s.valid()){result.error="invalid season";return result;}calendar.seasons.push_back(std::move(s));}else if(key=="scene"){if(!value.empty())result.project.scene_names.push_back(value);}else if(key=="asset"){const auto p=split(value,',');if(p.size()!=3){result.error="asset requires kind,name,uri";return result;}GameAssetRef a{p[1],p[2],asset_kind(p[0])};if(!a.valid()){result.error="invalid asset reference";return result;}result.project.assets.push_back(std::move(a));}else if(key.rfind("setting.",0)==0)result.project.settings[key.substr(8)]=value;else result.project.settings[key]=value;}result.project.calendar=std::move(calendar);if(result.project.calendar.seasons.empty())result.project.calendar.seasons={{"Spring",0,90,.05f,1.10f,1.00f},{"Summer",90,90,.30f,1.00f,1.05f},{"Autumn",180,90,-.05f,.75f,.98f},{"Winter",270,90,-.30f,.35f,.90f}};if(!result.project.valid()){result.error="invalid game project";return result;}result.success=true;return result;}
+std::string serialize_project(const GameProject&project){if(!project.valid())return {};std::ostringstream out;out<<"name = "<<project.name<<'\n'<<"version = "<<project.version<<'\n'<<"startup_scene = "<<project.startup_scene<<'\n'<<"tick_rate = "<<project.tick_rate<<'\n'<<"seconds_per_day = "<<project.calendar.seconds_per_day<<'\n'<<"days_per_year = "<<project.calendar.days_per_year<<'\n'<<"days_per_week = "<<project.calendar.days_per_week<<'\n'<<"dawn_start = "<<project.calendar.dawn_start<<'\n'<<"dawn_end = "<<project.calendar.dawn_end<<'\n'<<"dusk_start = "<<project.calendar.dusk_start<<'\n'<<"dusk_end = "<<project.calendar.dusk_end<<'\n';for(const auto&s:project.calendar.seasons)out<<"season = "<<s.name<<','<<s.start_day<<','<<s.length_days<<','<<s.temperature_bias<<','<<s.vegetation_factor<<','<<s.daylight_factor<<'\n';for(const auto&s:project.scene_names)out<<"scene = "<<s<<'\n';for(const auto&a:project.assets)out<<"asset = "<<asset_kind_name(a.kind)<<','<<a.name<<','<<a.uri<<'\n';for(const auto&[k,v]:project.settings)out<<"setting."<<k<<" = "<<v<<'\n';return out.str();}
+std::string serialize_save(const GameSaveState&state){if(!state.valid())return {};std::ostringstream out;out<<"project = "<<state.project_name<<'\n'<<"scene = "<<state.scene_name<<'\n'<<"environment_seconds = "<<state.environment_seconds<<'\n'<<"runtime_tick = "<<state.runtime_tick<<'\n';for(const auto&[k,v]:state.variables)out<<"variable."<<k<<" = "<<v<<'\n';for(const auto&e:state.active_entities)out<<"entity = "<<e<<'\n';return out.str();}
+GameSaveState parse_save(std::string_view source){GameSaveState state;std::istringstream in(std::string{source});std::string line;while(std::getline(in,line)){line=trim(line);if(line.empty()||line.front()=='#')continue;const auto eq=line.find('=');if(eq==std::string::npos)continue;const auto key=trim(line.substr(0,eq));const auto value=trim(line.substr(eq+1));if(key=="project")state.project_name=value;else if(key=="scene")state.scene_name=value;else if(key=="environment_seconds")f64(value,state.environment_seconds);else if(key=="runtime_tick"){std::uint32_t dummy{};if(u32(value,dummy))state.runtime_tick=dummy;}else if(key.rfind("variable.",0)==0)state.variables[key.substr(9)]=value;else if(key=="entity")state.active_entities.push_back(value);}return state;}
+bool GameRuntime::load_project(const GameProject&project,SceneLoader loader){if(!project.valid())return false;reset();project_=project;environment_.set_config(project.calendar);scene_loader_=std::move(loader);loaded_=true;if(!project.startup_scene.empty())return activate_scene(project.startup_scene);return true;}
+bool GameRuntime::add_scene(GameScene scene){if(!scene.valid())return false;if(std::find(project_.scene_names.begin(),project_.scene_names.end(),scene.name)==project_.scene_names.end())return false;scenes_[scene.name]=std::move(scene);return true;}
+bool GameRuntime::activate_scene(std::string_view name){if(!loaded_||name.empty())return false;auto it=scenes_.find(std::string{name});if(it==scenes_.end()&&scene_loader_){GameScene loaded_scene;loaded_scene.name=std::string{name};if(!scene_loader_(name,loaded_scene.ir)||!loaded_scene.valid())return false;it=scenes_.insert_or_assign(loaded_scene.name,std::move(loaded_scene)).first;}if(it==scenes_.end())return false;it->second.ir.root.properties.push_back({"runtime_hydrate",true});if(!runtime_.load(it->second.ir))return false;active_scene_=it->first;return true;}
+bool GameRuntime::update(double real_seconds)noexcept{if(!loaded_||!std::isfinite(real_seconds)||real_seconds<0)return false;environment_.update(real_seconds);if(project_.tick_rate==0)return true;accumulator_+=real_seconds;const double step=1.0/static_cast<double>(project_.tick_rate);std::uint32_t max_steps=8;while(accumulator_>=step&&max_steps--){runtime_.update(step);accumulator_-=step;}if(max_steps==0&&accumulator_>step*4.0)accumulator_=step;return true;}
+void GameRuntime::reset()noexcept{project_={};environment_.reset();runtime_.reset();scenes_.clear();variables_.clear();active_scene_.clear();loaded_=false;accumulator_=0.0;scene_loader_={};}
+bool GameRuntime::set_variable(std::string name,std::string value){if(name.empty())return false;variables_[std::move(name)]=std::move(value);return true;}std::string_view GameRuntime::variable(std::string_view name)const noexcept{const auto it=variables_.find(std::string{name});return it==variables_.end()?std::string_view{}:std::string_view{it->second};}bool GameRuntime::remove_variable(std::string_view name)noexcept{return variables_.erase(std::string{name})!=0;}
+GameSaveState GameRuntime::save()const{GameSaveState state;state.project_name=project_.name;state.scene_name=active_scene_;state.environment_seconds=environment_.state().elapsed_seconds;state.runtime_tick=runtime_.state().tick;state.variables=variables_;for(const auto id:runtime_.state().entities.ids())if(const auto*e=runtime_.state().entities.get(id);e&&e->active)state.active_entities.push_back(e->name);return state;}
+bool GameRuntime::restore(const GameSaveState&state)noexcept{if(!loaded_||!state.valid()||state.project_name!=project_.name)return false;if(!state.scene_name.empty()&&!activate_scene(state.scene_name))return false;environment_.set_elapsed_seconds(state.environment_seconds);variables_=state.variables;return true;}
 }
-bool u32(std::string_view s, std::uint32_t& value) {
-    std::uint32_t v = 0;
-    const auto r = std::from_chars(s.data(), s.data() + s.size(), v);
-    if (r.ec != std::errc{} || r.ptr != s.data() + s.size()) return false;
-    value = v; return true;
-}
-bool f32(std::string_view s, float& value) {
-    try { value = std::stof(std::string{s}); return std::isfinite(value); }
-    catch (...) { return false; }
-}
-bool f64(std::string_view s, double& value) {
-    try { value = std::stod(std::string{s}); return std::isfinite(value); }
-    catch (...) { return false; }
-}
-GameAssetKind asset_kind(std::string_view s) {
-    if (s == "scene") return GameAssetKind::Scene;
-    if (s == "world") return GameAssetKind::World;
-    if (s == "script") return GameAssetKind::Script;
-    if (s == "material") return GameAssetKind::Material;
-    return GameAssetKind::Generic;
-}
-std::string asset_kind_name(GameAssetKind k) {
-    switch (k) { case GameAssetKind::Scene: return "scene"; case GameAssetKind::World: return "world"; case GameAssetKind::Script: return "script"; case GameAssetKind::Material: return "material"; default: return "generic"; }
-}
-}
-
-bool GameProject::valid() const noexcept {
-    if (name.empty() || version.empty() || tick_rate == 0 || !calendar.valid()) return false;
-    if (!startup_scene.empty() && std::find(scene_names.begin(), scene_names.end(), startup_scene) == scene_names.end()) return false;
-    for (const auto& a : assets) if (!a.valid()) return false;
-    return true;
-}
-
-GameProjectLoadResult parse_project(std::string_view source) {
-    GameProjectLoadResult result;
-    CalendarConfig calendar;
-    std::istringstream in(std::string{source});
-    std::string line;
-    std::size_t line_no = 0;
-    while (std::getline(in, line)) {
-        ++line_no;
-        line = trim(line);
-        if (line.empty() || line.front() == '#') continue;
-        const auto eq = line.find('=');
-        if (eq == std::string::npos) { result.error = "project line " + std::to_string(line_no) + " requires '='"; return result; }
-        const auto key = trim(line.substr(0, eq));
-        const auto value = trim(line.substr(eq + 1));
-        if (key == "name") result.project.name = value;
-        else if (key == "version") result.project.version = value;
-        else if (key == "startup_scene") result.project.startup_scene = value;
-        else if (key == "tick_rate") { if (!u32(value, result.project.tick_rate)) { result.error = "invalid tick_rate"; return result; } }
-        else if (key == "seconds_per_day") { if (!f64(value, calendar.seconds_per_day)) { result.error = "invalid seconds_per_day"; return result; } }
-        else if (key == "days_per_year") { if (!u32(value, calendar.days_per_year)) { result.error = "invalid days_per_year"; return result; } }
-        else if (key == "days_per_week") { if (!u32(value, calendar.days_per_week)) { result.error = "invalid days_per_week"; return result; } }
-        else if (key == "dawn_start") { if (!f32(value, calendar.dawn_start)) { result.error = "invalid dawn_start"; return result; } }
-        else if (key == "dawn_end") { if (!f32(value, calendar.dawn_end)) { result.error = "invalid dawn_end"; return result; } }
-        else if (key == "dusk_start") { if (!f32(value, calendar.dusk_start)) { result.error = "invalid dusk_start"; return result; } }
-        else if (key == "dusk_end") { if (!f32(value, calendar.dusk_end)) { result.error = "invalid dusk_end"; return result; } }
-        else if (key == "season") {
-            const auto p = split(value, ',');
-            if (p.size() != 6) { result.error = "season requires name,start_day,length_days,temperature,vegetation,daylight"; return result; }
-            SeasonDefinition s; s.name = p[0];
-            if (!u32(p[1], s.start_day) || !u32(p[2], s.length_days) || !f32(p[3], s.temperature_bias) || !f32(p[4], s.vegetation_factor) || !f32(p[5], s.daylight_factor) || !s.valid()) { result.error = "invalid season"; return result; }
-            calendar.seasons.push_back(std::move(s));
-        } else if (key == "scene") {
-            if (!value.empty()) result.project.scene_names.push_back(value);
-        } else if (key == "asset") {
-            const auto p = split(value, ',');
-            if (p.size() != 3) { result.error = "asset requires kind,name,uri"; return result; }
-            GameAssetRef a{p[1], p[2], asset_kind(p[0])};
-            if (!a.valid()) { result.error = "invalid asset reference"; return result; }
-            result.project.assets.push_back(std::move(a));
-        } else if (key.rfind("setting.", 0) == 0) result.project.settings[key.substr(8)] = value;
-        else result.project.settings[key] = value;
-    }
-    result.project.calendar = std::move(calendar);
-    if (result.project.calendar.seasons.empty()) {
-        result.project.calendar.seasons = {
-            {"Spring", 0, 90, 0.05f, 1.10f, 1.00f},
-            {"Summer", 90, 90, 0.30f, 1.00f, 1.05f},
-            {"Autumn", 180, 90, -0.05f, 0.75f, 0.98f},
-            {"Winter", 270, 90, -0.30f, 0.35f, 0.90f}
-        };
-    }
-    if (!result.project.valid()) { result.error = "invalid game project"; return result; }
-    result.success = true;
-    return result;
-}
-
-std::string serialize_project(const GameProject& project) {
-    if (!project.valid()) return {};
-    std::ostringstream out;
-    out << "name = " << project.name << '\n' << "version = " << project.version << '\n';
-    out << "startup_scene = " << project.startup_scene << '\n' << "tick_rate = " << project.tick_rate << '\n';
-    out << "seconds_per_day = " << project.calendar.seconds_per_day << '\n' << "days_per_year = " << project.calendar.days_per_year << '\n';
-    out << "days_per_week = " << project.calendar.days_per_week << '\n';
-    out << "dawn_start = " << project.calendar.dawn_start << '\n' << "dawn_end = " << project.calendar.dawn_end << '\n';
-    out << "dusk_start = " << project.calendar.dusk_start << '\n' << "dusk_end = " << project.calendar.dusk_end << '\n';
-    for (const auto& s : project.calendar.seasons) out << "season = " << s.name << ',' << s.start_day << ',' << s.length_days << ',' << s.temperature_bias << ',' << s.vegetation_factor << ',' << s.daylight_factor << '\n';
-    for (const auto& s : project.scene_names) out << "scene = " << s << '\n';
-    for (const auto& a : project.assets) out << "asset = " << asset_kind_name(a.kind) << ',' << a.name << ',' << a.uri << '\n';
-    for (const auto& [k,v] : project.settings) out << "setting." << k << " = " << v << '\n';
-    return out.str();
-}
-
-std::string serialize_save(const GameSaveState& state) {
-    if (!state.valid()) return {};
-    std::ostringstream out;
-    out << "project = " << state.project_name << '\n' << "scene = " << state.scene_name << '\n'
-        << "environment_seconds = " << state.environment_seconds << '\n' << "runtime_tick = " << state.runtime_tick << '\n';
-    for (const auto& [k,v] : state.variables) out << "variable." << k << " = " << v << '\n';
-    for (const auto& e : state.active_entities) out << "entity = " << e << '\n';
-    return out.str();
-}
-
-GameSaveState parse_save(std::string_view source) {
-    GameSaveState state;
-    std::istringstream in(std::string{source}); std::string line;
-    while (std::getline(in, line)) {
-        line = trim(line); if (line.empty() || line.front() == '#') continue;
-        const auto eq = line.find('='); if (eq == std::string::npos) continue;
-        const auto key = trim(line.substr(0, eq)); const auto value = trim(line.substr(eq + 1));
-        if (key == "project") state.project_name = value;
-        else if (key == "scene") state.scene_name = value;
-        else if (key == "environment_seconds") f64(value, state.environment_seconds);
-        else if (key == "runtime_tick") { std::uint32_t dummy{}; if (u32(value, dummy)) state.runtime_tick = dummy; }
-        else if (key.rfind("variable.",0) == 0) state.variables[key.substr(9)] = value;
-        else if (key == "entity") state.active_entities.push_back(value);
-    }
-    return state;
-}
-
-bool GameRuntime::load_project(const GameProject& project, SceneLoader loader) {
-    if (!project.valid()) return false;
-    reset();
-    project_ = project;
-    environment_.set_config(project.calendar);
-    scene_loader_ = std::move(loader);
-    loaded_ = true;
-    if (!project.startup_scene.empty()) return activate_scene(project.startup_scene);
-    return true;
-}
-
-bool GameRuntime::add_scene(GameScene scene) {
-    if (!scene.valid()) return false;
-    if (std::find(project_.scene_names.begin(), project_.scene_names.end(), scene.name) == project_.scene_names.end()) return false;
-    scenes_[scene.name] = std::move(scene);
-    return true;
-}
-
-bool GameRuntime::activate_scene(std::string_view name) {
-    if (!loaded_ || name.empty()) return false;
-    auto it = scenes_.find(std::string{name});
-    if (it == scenes_.end() && scene_loader_) {
-        GameScene loaded_scene; loaded_scene.name = std::string{name};
-        if (!scene_loader_(name, loaded_scene.ir) || !loaded_scene.valid()) return false;
-        it = scenes_.insert_or_assign(loaded_scene.name, std::move(loaded_scene)).first;
-    }
-    if (it == scenes_.end()) return false;
-    if (!runtime_.load(it->second.ir)) return false;
-    active_scene_ = it->first;
-    return true;
-}
-
-bool GameRuntime::update(double real_seconds) noexcept {
-    if (!loaded_ || !std::isfinite(real_seconds) || real_seconds < 0.0) return false;
-    environment_.update(real_seconds);
-    if (project_.tick_rate == 0) return true;
-    accumulator_ += real_seconds;
-    const double step = 1.0 / static_cast<double>(project_.tick_rate);
-    std::uint32_t max_steps = 8;
-    while (accumulator_ >= step && max_steps--) { runtime_.update(step); accumulator_ -= step; }
-    if (max_steps == 0 && accumulator_ > step * 4.0) accumulator_ = step;
-    return true;
-}
-
-void GameRuntime::reset() noexcept {
-    project_ = {};
-    environment_.reset(); runtime_.reset(); scenes_.clear(); variables_.clear(); active_scene_.clear(); loaded_ = false; accumulator_ = 0.0; scene_loader_ = {};
-}
-
-bool GameRuntime::set_variable(std::string name, std::string value) { if (name.empty()) return false; variables_[std::move(name)] = std::move(value); return true; }
-std::string_view GameRuntime::variable(std::string_view name) const noexcept { const auto it = variables_.find(std::string{name}); return it == variables_.end() ? std::string_view{} : std::string_view{it->second}; }
-bool GameRuntime::remove_variable(std::string_view name) noexcept { return variables_.erase(std::string{name}) != 0; }
-
-GameSaveState GameRuntime::save() const {
-    GameSaveState state; state.project_name = project_.name; state.scene_name = active_scene_; state.environment_seconds = environment_.state().elapsed_seconds; state.runtime_tick = runtime_.state().tick; state.variables = variables_;
-    for (const auto id : runtime_.state().entities.ids()) if (const auto* e = runtime_.state().entities.get(id); e && e->active) state.active_entities.push_back(e->name);
-    return state;
-}
-
-bool GameRuntime::restore(const GameSaveState& state) noexcept {
-    if (!loaded_ || !state.valid() || state.project_name != project_.name) return false;
-    if (!state.scene_name.empty() && !activate_scene(state.scene_name)) return false;
-    environment_.set_elapsed_seconds(state.environment_seconds);
-    variables_ = state.variables;
-    return true;
-}
-
-} // namespace exgine
