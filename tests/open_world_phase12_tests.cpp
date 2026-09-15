@@ -18,9 +18,9 @@ static void test_streaming_budget_lod_and_determinism() {
     config.active_radius_chunks = 2;
     config.prefetch_radius_chunks = 4;
     config.unload_radius_chunks = 5;
-    config.max_loaded_chunks = 24;
-    config.max_new_chunks_per_update = 24;
-    config.max_unloads_per_update = 24;
+    config.max_loaded_chunks = 40;
+    config.max_new_chunks_per_update = 40;
+    config.max_unloads_per_update = 40;
     config.medium_lod_start = 2;
     config.far_lod_start = 3;
 
@@ -66,7 +66,7 @@ static void test_streaming_hysteresis_and_reconfiguration() {
     assert(before > 0);
     assert(streamer.find({0, 0}) != nullptr);
     assert(streamer.update({32, 0, 0}));
-    assert(streamer.find({0, 0}) != nullptr); // hysteresis keeps recently useful chunks alive
+    assert(streamer.find({0, 0}) != nullptr);
 
     config.max_loaded_chunks = 4;
     streamer.set_config(config);
