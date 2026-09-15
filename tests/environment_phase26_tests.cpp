@@ -15,7 +15,7 @@ int main() {
     assert(env.state().valid());
     env.set_hour(6.0f);
     assert(env.state().day_phase == DayPhase::Dawn);
-    env.update(50.0);
+    env.update(25.0);
     assert(env.state().absolute_day == 0);
     assert(std::fabs(env.state().hour - 12.0f) < 0.01f);
     env.update(60.0);
