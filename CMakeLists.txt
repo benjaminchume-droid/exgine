@@ -9,7 +9,7 @@ add_library(exgine_core
     src/parser.cpp src/semantic.cpp src/compiler.cpp src/runtime.cpp src/engine.cpp src/editor.cpp
     src/geometry.cpp src/character.cpp src/material.cpp src/texture.cpp src/resources.cpp
     src/scene.cpp src/lighting.cpp src/render.cpp src/shaders.cpp src/gpu.cpp src/building.cpp
-    src/vehicle.cpp src/physics.cpp src/gameplay.cpp)
+    src/vehicle.cpp src/physics.cpp src/gameplay.cpp src/animation.cpp)
 target_include_directories(exgine_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(exgine_core PUBLIC cxx_std_20)
 target_compile_options(exgine_core PRIVATE
@@ -32,3 +32,5 @@ exgine_add_test(exgine_open_world_phase12_tests tests/open_world_phase12_tests.c
 exgine_add_test(exgine_performance_phase13_tests tests/performance_phase13_tests.cpp)
 exgine_add_test(exgine_editor_phase14_tests tests/editor_phase14_tests.cpp)
 exgine_add_test(exgine_gpu_phase15_tests tests/gpu_phase15_tests.cpp)
+exgine_add_test(exgine_animation_phase16_tests tests/animation_phase16_tests.cpp)
+exgine_add_test(exgine_animation_phase16_runtime_tests tests/animation_phase16_runtime_tests.cpp)
