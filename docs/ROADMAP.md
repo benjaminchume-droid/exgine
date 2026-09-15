@@ -2,7 +2,7 @@
 
 EXGINE is developed as connected phases. A phase is complete only after its repository-wide checkpoint passes.
 
-## Phase 0 — Foundation
+## Phase 0 — Foundation — IMPLEMENTED
 
 Establish project contracts: C++20 build, public API boundaries, diagnostics, version identity, deterministic core behavior, tests, documentation, and repository structure.
 
@@ -12,78 +12,82 @@ Establish project contracts: C++20 build, public API boundaries, diagnostics, ve
 
 Build the source pipeline: `source -> lexer -> parser -> AST -> semantic validation -> IR`.
 
-**Checkpoint:** source programs compile into validated IR and invalid programs fail through diagnostics. CI is green for the Phase 1/2 baseline.
+**Checkpoint:** source programs compile into validated IR and invalid programs fail through diagnostics.
 
 ## Phase 2 — Runtime — IMPLEMENTED
 
 Turn validated IR into live runtime state with entity identity, world state, registry ownership, loading, updating, reset, and one engine lifecycle facade.
 
-**Checkpoint:** complete programs create live entities, advance runtime state, reset cleanly, and failed loads cannot leave stale runtime state. CI is green on the Phase 2 head.
+**Checkpoint:** complete programs create live entities, advance runtime state, reset cleanly, and failed loads cannot leave stale runtime state.
 
-## Phase 3 — Geometry Foundation — IN PROGRESS
+## Phase 3 — Geometry Foundation — IMPLEMENTED FOUNDATION
 
-Build the continuous 3D geometry foundation used by every visual object. Primitive shapes are reusable mesh generators, not a block-world abstraction. Add boxes, spheres, cylinders, capsules, mesh assemblies, and deterministic procedural character parts. Extend the IR/runtime vocabulary for players, NPCs, bridges and props.
+Build continuous 3D geometry APIs and mesh assemblies that every visual object can reuse. The foundation includes primitive meshes, capsules, deterministic procedural character parts, extended node vocabulary, and an initial physics/material architecture that later phases expand.
 
 **Checkpoint:** geometry is generated through reusable public APIs, attached to runtime entities, procedural character generation is deterministic, and the full repository passes CI.
 
-## Phase 4 — Materials and Procedural Textures
+## Phase 4 — Materials and Procedural Textures — IMPLEMENTED
 
-Build physically meaningful material definitions and procedural texture layers for wood, stone, concrete, gravel, asphalt, grass, sand, metal, glass, rubber, fabric, leather, water, snow and other game materials. Add texture coordinates, normals/tangents, surface variation and material instances.
+Build extensible physically meaningful material definitions, procedural texture generation, noise families, resource caching, and deterministic material generation keys.
 
-**Checkpoint:** one managed material pipeline can describe and supply surface appearance to every geometry type.
+**Checkpoint:** one managed material/resource pipeline can describe and supply surface appearance to geometry without a fixed tiny material enum.
 
-## Phase 5 — World and Scenery
+## Phase 5 — World, Terrain, Water and Scenery — IMPLEMENTED
 
-Build deterministic terrain, mountains, grasslands, forests, rivers, lakes, oceans, vegetation, rocks, bridges and world coordinates. Add chunks, generation, streaming, unloading and regeneration.
+Build deterministic continuous terrain, biomes, water bodies, vegetation, world-space sampling, chunk generation, streaming, unloading and reproducible regeneration foundations.
 
-**Checkpoint:** a complete seeded scenery world can be generated, streamed, unloaded, regenerated and reproduced.
+**Checkpoint:** a seeded scenery world can be generated, streamed, unloaded, regenerated and reproduced through shared world-space sampling.
 
-## Phase 6 — Renderer and Realistic Lighting
+## Phase 6 — Scene and Lighting — IMPLEMENTED
 
-Build the GPU abstraction, cameras, culling, instancing, LOD, physically based rendering, shadows, ambient lighting, reflections, atmospheric effects, water rendering and post-processing. Shader code remains backend-aware but renderer-independent at the public boundary.
+Build the runtime scene hierarchy, stable scene IDs, parent/child transforms, cameras, directional/point/spot/area lights, shadow policy, environment lighting, fog, exposure and HDR metadata.
 
-**Checkpoint:** the actual runtime world and its generated geometry/materials are rendered through one production renderer; no disconnected graphics demo counts.
+**Checkpoint:** runtime entities connect to one scene graph and renderer-facing lighting/camera state without a graphics API dependency.
 
-## Phase 7 — Interactive Buildings
+## Phase 7 — Renderer and Shaders — IN PROGRESS
+
+Build the renderer boundary that converts runtime scene/material/light state into validated render frames. Establish matrices, bounds, frustum culling, material bindings, render passes, shader contracts, and platform GPU backend interfaces. Keep GPU API details behind platform modules.
+
+**Checkpoint:** the actual runtime world and its generated geometry/materials can produce one validated render frame and be accepted by the headless renderer; GPU backend implementations must consume the same contract rather than a parallel path.
+
+## Phase 8 — Interactive Buildings
 
 Generate buildings from reusable geometry, curves and constraints, including varied floorplans, rooms, doors, windows, stairs, furniture, lighting and collision. Support entering/exiting and interior exploration as normal runtime state.
 
 **Checkpoint:** generated buildings have unique reproducible layouts and are enterable/interactable in the same world as their exteriors.
 
-## Phase 8 — Vehicles and Complex Objects
+## Phase 9 — Vehicles and Complex Objects
 
-Generate curved vehicle bodies and mechanical assemblies for cars, trucks, buses, motorcycles and other vehicles. Add wheels, interiors, lights, collision and later vehicle physics.
+Generate curved vehicle bodies and mechanical assemblies for cars, trucks, buses, motorcycles, boats, aircraft and other complex objects. Add wheels, interiors, lights, collision and physics attachment points.
 
-**Checkpoint:** complex generated vehicles are ordinary runtime entities with geometry/materials and can be driven once gameplay/physics layers are available.
+**Checkpoint:** complex generated vehicles are ordinary runtime entities using the shared geometry/material/resource pipeline.
 
-## Phase 9 — Characters, Clothing and Equipment
+## Phase 10 — Physics
 
-Expand procedural players and NPCs into full character generation: body variation, faces, hair, clothing, watches, bags, shoes, uniforms, accessories, animation attachment points and equipment slots. Items share the same geometry/material/resource pipeline.
+Expand the physics foundation into robust broadphase/narrowphase collision, rigid bodies, continuous collision detection, joints, constraints, character controllers, vehicle dynamics, friction, triggers, sleeping, buoyancy and deterministic simulation options.
 
-Combat-capable games can represent firearms, melee weapons and other equipment as ordinary game assets/components governed by game rules.
+**Checkpoint:** physical interaction operates on the same runtime entities, geometry and world state used by rendering.
 
-**Checkpoint:** players and NPCs can be generated from seeds, equipped from reusable item definitions, and remain compatible with animation, physics and rendering.
+## Phase 11 — Characters, NPCs, Items and Gameplay
 
-## Phase 10 — Physics and Gameplay
+Expand procedural players and NPCs into full characters with body variation, faces, hair, clothing, accessories, animation attachment points, equipment and reusable items. Add gameplay components, interaction, combat and state systems.
 
-Add collision, bodies, character movement, vehicle physics, interaction, triggers, animation systems, combat/gameplay components and damage/state systems.
+**Checkpoint:** players/NPCs can be generated from seeds, equipped from reusable item definitions and remain compatible with animation, physics and rendering.
 
-**Checkpoint:** gameplay operates on the same entities, geometry and world state rendered by the engine.
+## Phase 12 — Open-World Streaming and Scale
 
-## Phase 11 — Resources and Assets
+Extend the Phase 5 streaming foundation into scalable region management, asynchronous generation, persistence, prioritized loading/unloading, visibility-driven budgets, large-world coordinates and runtime world-state continuity.
 
-Implement asset discovery, import, caching, lifetime management, streaming, meshes, materials, textures, animation, audio and other resource contracts.
+**Checkpoint:** large worlds stream without changing game logic and without duplicating world/entity representations.
 
-**Checkpoint:** source asset to runtime resource uses one managed pipeline.
+## Phase 13 — Mobile Runtime and Performance
 
-## Phase 12 — Mobile Runtime and Performance
-
-Make Android first-class with input, lifecycle, GPU integration, packaging, memory limits, mobile controls, capability detection, frame-time budgeting, dynamic resolution, adaptive LOD and profiling.
+Make Android first-class with lifecycle handling, mobile input, GPU integration, capability detection, frame-time and memory budgets, dynamic resolution, adaptive LOD, batching, profiling and device-tier quality settings.
 
 **Checkpoint:** the same game architecture runs on Android and quality adapts to device capability without changing game logic.
 
-## Phase 13 — Editor and Tooling
+## Phase 14 — Editor and Tooling
 
-Build project tooling, scene/world inspection, asset management, debugging and profiling on the same engine contracts.
+Build project tooling, scene/world inspection, asset management, debugging, profiling and authoring workflows on the same engine contracts.
 
 **Checkpoint:** tooling never maintains a parallel representation of the runtime world.
