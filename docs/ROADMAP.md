@@ -111,3 +111,11 @@ Add reusable skeletons, hierarchical bones, model-space pose evaluation, quatern
 Connect evaluated Phase 16 poses to the Phase 15 OpenGL ES backend. Render frames now carry immutable bone palettes with skinned meshes; the GPU path uses a dedicated GLSL ES 3.10 skeletal PBR shader, supports four bone influences per vertex and uploads up to 128 bone matrices per draw. Static rendering continues through the existing mobile PBR program.
 
 **Checkpoint:** a runtime entity can own a validated skeleton and skinned mesh, an animation controller can update its pose, `Renderer::build_frame()` emits a self-contained animated draw with a bone palette, and `OpenGLESRenderer::submit()` performs GPU skinning submission successfully under the regression suite.
+
+## Phase 18 — Android EGL + Surface + Swapchain + Real Mobile Presentation — IMPLEMENTED
+
+Connect the OpenGL ES renderer to an actual Android `ANativeWindow` through EGL. The Phase 18 presenter creates and owns the EGL display, ES 3.x context and window surface, resolves the Phase 15/17 OpenGL ES procedures against the active context, tracks surface dimensions, handles surface attach/detach/resize lifecycle, synchronizes presentation with `eglSwapInterval(1)`, and presents completed render buffers with `eglSwapBuffers()`.
+
+A native NDK `NativeActivity` sample consumes the same `exgine_core` library and drives the presentation loop without introducing a second rendering stack. Desktop builds retain a deterministic non-Android implementation so the contract remains testable in repository CI.
+
+**Checkpoint:** the repository-wide suite remains green, the Android presentation API owns native-window/EGL lifecycle safely, and the NDK target connects that lifecycle directly to the existing OpenGLES renderer and render-frame contract.
