@@ -19,4 +19,7 @@ target_link_libraries(exgine_demo PRIVATE exgine_core)
 enable_testing()
 add_executable(exgine_core_tests tests/core_tests.cpp)
 target_link_libraries(exgine_core_tests PRIVATE exgine_core)
+target_compile_options(exgine_core_tests PRIVATE
+    $<$<CXX_COMPILER_ID:GNU,Clang>:-UNDEBUG>
+    $<$<CXX_COMPILER_ID:MSVC>:/UNDEBUG>)
 add_test(NAME exgine_core_tests COMMAND exgine_core_tests)
