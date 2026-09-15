@@ -1,0 +1,20 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.exgine.game'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.exgine.game'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0'
+        ndkVersion '27.2.12479018'
+        externalNativeBuild { cmake { arguments '-DANDROID_STL=c++_static', '-DEXGINE_BUILD_DEMO=OFF', '-DEXGINE_BUILD_TESTS=OFF' } }
+    }
+    buildTypes {
+        release { minifyEnabled false; debuggable false }
+        debug { debuggable true }
+    }
+    externalNativeBuild { cmake { path file('../CMakeLists.txt'); version '3.22.1' } }
+}
