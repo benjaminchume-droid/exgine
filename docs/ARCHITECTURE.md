@@ -24,10 +24,12 @@ This document defines the architectural contracts that keep EXGINE connected as 
            World     Entities    Resources
               \        |        /
                     Scene
-                      |
+                 /        \
+            Lighting    Camera
+                 \        /
                   Render API
-                      |
-             Platform/GPU backend
+                       |
+              Platform/GPU backend
 ```
 
 ## Dependency direction
@@ -38,6 +40,8 @@ Dependencies flow downward toward lower-level services. A lower-level subsystem 
 - IR contains engine-neutral game intent and validated data.
 - Runtime consumes validated IR and owns live game state.
 - World systems generate and stream world state.
+- Scene graph owns runtime spatial hierarchy through stable node IDs.
+- Lighting/camera systems describe renderer-facing scene state without depending on a graphics API.
 - Renderer consumes renderable state; it does not define gameplay rules.
 - Platform backends provide OS/GPU integration behind interfaces.
 - Examples and tools consume public APIs; engine internals do not depend on examples.
@@ -64,7 +68,7 @@ Expected user/content errors should be represented through structured diagnostic
 
 ## Platform separation
 
-Android, desktop, Vulkan, OpenGL ES, audio backends, and input devices must be isolated behind platform/backend interfaces. Core world, IR, parser, and gameplay code should remain portable.
+Android, desktop, Vulkan, OpenGL ES, audio backends, and input devices must be isolated behind platform/backend interfaces. Core world, IR, parser, gameplay, scene and lighting code should remain portable.
 
 ## Phase rule
 
