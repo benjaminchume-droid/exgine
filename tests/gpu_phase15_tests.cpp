@@ -1,4 +1,5 @@
 #include "exgine/gpu.hpp"
+#include "exgine/shaders.hpp"
 #include <cassert>
 #include <cstdint>
 #include <iostream>
