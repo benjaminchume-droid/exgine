@@ -23,13 +23,11 @@ void test_fixed_step_and_gravity() {
     s.max_substeps = 4;
     s.max_accumulated_time = 0.05f;
     PhysicsWorld w(s);
-
     PhysicsRigidBodyDesc d;
     d.transform.position = {0, 10, 0};
     const auto id = w.create_body(d);
     assert(id != invalid_physics_body);
     assert(w.add_collider(id, make_box()) != invalid_physics_collider);
-
     const auto before = w.body_transform(id);
     assert(before);
     const auto step = w.step(1.0f);
@@ -43,27 +41,23 @@ void test_collision_and_contacts() {
     PhysicsWorldSettings s;
     s.fixed_timestep = 1.0f / 120.0f;
     PhysicsWorld w(s);
-
     PhysicsRigidBodyDesc floor_desc;
     floor_desc.type = PhysicsBodyType::Static;
     floor_desc.transform.position = {0,-0.5f,0};
     const auto floor = w.create_body(floor_desc);
     assert(w.add_collider(floor, make_box(5,0.5f,5)));
-
-    PhysicsRigidBodyDesc ball_desc;
-    ball_desc.transform.position = {0,2,0};
-    const auto ball = w.create_body(ball_desc);
-    assert(w.add_collider(ball, make_box()));
-
+    PhysicsRigidBodyDesc body_desc;
+    body_desc.transform.position = {0,2,0};
+    const auto body = w.create_body(body_desc);
+    assert(w.add_collider(body, make_box()));
     std::uint32_t begins = 0;
     std::uint32_t persists = 0;
     w.set_callbacks({[&](const PhysicsContactEvent& e) {
         if (e.type == PhysicsContactEvent::Type::Begin) ++begins;
         if (e.type == PhysicsContactEvent::Type::Persist) ++persists;
     }, {}, {}, {}});
-
     for (int i=0; i<300; ++i) w.step(1.0f/120.0f);
-    const auto t = w.body_transform(ball);
+    const auto t = w.body_transform(body);
     assert(t && t->position.y > -0.1f && t->position.y < 1.0f);
     assert(begins > 0);
     assert(persists > 0);
@@ -102,19 +96,16 @@ void test_queries_and_filters() {
     c.mask = 4U;
     const auto collider = w.add_collider(body,c);
     assert(collider);
-
     PhysicsQueryFilter wrong;
     wrong.layer = 1U;
     wrong.mask = 1U;
     assert(w.raycast({{0,0,0},{0,0,1},20},wrong).empty());
-
     PhysicsQueryFilter right;
     right.layer = 4U;
     right.mask = 2U;
     const auto hits = w.raycast({{0,0,0},{0,0,1},20},right);
     assert(!hits.empty() && hits.front().valid());
     assert(hits.front().collider == collider);
-
     const auto overlaps = w.overlap(PhysicsShape{PhysicsShapeType::Sphere,PhysicsSphereShape{2}},{{0,0,5},{0,0,0}},right);
     assert(!overlaps.empty());
     const auto casts = w.shapecast({PhysicsShape{PhysicsShapeType::Sphere,PhysicsSphereShape{.5f}},{{0,0,0},{0,0,0}},{0,0,10}},right);
@@ -126,18 +117,15 @@ void test_shape_contracts() {
     convex.type = PhysicsShapeType::ConvexHull;
     convex.data = PhysicsConvexHullShape{std::make_shared<const std::vector<Vec3>>(std::vector<Vec3>{{-1,0,0},{1,0,0},{0,1,0},{0,0,1}})};
     assert(convex.valid() && convex.local_bounds().valid());
-
     auto mesh = std::make_shared<Mesh>(make_box({1,1,1}));
     PhysicsShape triangle;
     triangle.type = PhysicsShapeType::TriangleMesh;
     triangle.data = PhysicsTriangleMeshShape{mesh,false};
     assert(triangle.valid() && triangle.local_bounds().valid());
-
     PhysicsShape height;
     height.type = PhysicsShapeType::HeightField;
     height.data = PhysicsHeightFieldShape{3,3,1.0f,std::make_shared<const std::vector<float>>(std::vector<float>{0,0,0,0,1,0,0,0,0})};
     assert(height.valid() && height.local_bounds().valid());
-
     auto child = std::make_shared<const PhysicsShape>(PhysicsShape{PhysicsShapeType::Sphere,PhysicsSphereShape{1}});
     PhysicsShape compound;
     compound.type = PhysicsShapeType::Compound;
@@ -183,11 +171,16 @@ void test_determinism() {
     d.transform.position = {0,5,0};
     const auto aa = a.create_body(d), bb = b.create_body(d);
     assert(a.add_collider(aa,make_box()) && b.add_collider(bb,make_box()));
-    for (int i=0;i<180;++i) { a.step(1.0f/120.0f); b.step(1.0f/120.0f); }
+    std::uint64_t steps_a = 0;
+    std::uint64_t steps_b = 0;
+    for (int i=0;i<180;++i) {
+        steps_a = a.step(1.0f/120.0f).simulation_step;
+        steps_b = b.step(1.0f/120.0f).simulation_step;
+    }
     const auto ta=a.body_transform(aa), tb=b.body_transform(bb);
     assert(ta && tb);
     assert(ta->position.x==tb->position.x && ta->position.y==tb->position.y && ta->position.z==tb->position.z);
-    assert(a.stats().simulation_step==b.stats().simulation_step);
+    assert(steps_a==steps_b);
 }
 }
 
