@@ -56,17 +56,19 @@ Generate buildings from reusable geometry and deterministic constraints, includi
 
 **Checkpoint:** generated buildings have reproducible layouts, are represented by real reusable geometry, expose room and interaction queries, and door state changes the active collision set without creating a parallel world representation.
 
-## Phase 9 — Vehicles and Complex Objects
+## Phase 9 — Vehicles and Complex Objects — IMPLEMENTED
 
-Generate curved vehicle bodies and mechanical assemblies for cars, trucks, buses, motorcycles, boats, aircraft and other complex objects. Add wheels, interiors, lights, collision and physics attachment points.
+Generate configuration-driven continuous 3D vehicle assemblies for cars, SUVs, sports cars, pickups, trucks, buses, motorcycles, construction vehicles, emergency vehicles, boats and aircraft. Add wheels, interiors, doors, seats, lights, collision volumes, mechanical attachment points and renderable part orientation through the shared engine pipeline.
 
-**Checkpoint:** complex generated vehicles are ordinary runtime entities using the shared geometry/material/resource pipeline.
+**Checkpoint:** every supported vehicle family generates as a normal runtime entity using shared geometry/material/resource/render contracts, preserves caller-controlled dimensional configuration, and remains deterministic for an explicit seed.
 
-## Phase 10 — Physics
+## Phase 10 — Physics — CONTRACT ESTABLISHED
 
-Expand the physics foundation into robust broadphase/narrowphase collision, continuous collision detection, joints, constraints, character controllers, vehicle dynamics, friction, triggers, sleeping, buoyancy and deterministic simulation options.
+`include/exgine/physics.hpp` now defines the production solver-facing contract for real-time 3D rigid bodies: body modes, collision shapes, materials, contacts, CCD motion quality, constraints, queries, sleeping, fixed-step simulation, determinism and callbacks.
 
-**Checkpoint:** physical interaction operates on the same runtime entities, geometry and world state used by rendering.
+The solver implementation remains the next phase: broadphase/narrowphase collision, constraint solving, continuous collision detection, character controllers, vehicle dynamics, triggers, sleeping, buoyancy and deterministic simulation behavior must operate on existing runtime entities and generated geometry/attachments.
+
+**Checkpoint:** contract and integration boundaries are stable before solver implementation begins.
 
 ## Phase 11 — Characters, NPCs, Items and Gameplay
 
