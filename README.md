@@ -75,7 +75,7 @@ A phase is complete only when its checkpoint passes.
 | 5 | Procedural world, terrain, water, biomes and streaming | Implemented |
 | 6 | Scene graph, lighting and camera state | Implemented |
 | 7 | Renderer frame pipeline and shader contracts | Implemented |
-| 8 | Interactive buildings | Planned |
+| 8 | Interactive buildings | Implemented |
 | 9 | Vehicles and complex objects | Planned |
 | 10 | Full physics | Planned |
 | 11 | Characters, NPCs, items and gameplay | Planned |
@@ -113,7 +113,11 @@ The core is C++20. Platform-specific rendering and mobile code are introduced be
 
 ## Current renderer boundary
 
-Phase 7 now converts live runtime state into a validated `RenderFrame` containing camera matrices, visible mesh draw calls, material/texture bindings, and active lighting. The core also contains deterministic bounds/frustum culling and built-in GLSL ES 3.10 PBR/unlit shader sources. GPU objects, platform presentation and device-specific backend implementations remain behind the renderer contract.
+Phase 7 converts live runtime state into a validated `RenderFrame` containing camera matrices, visible mesh draw calls, material/texture bindings, and active lighting. The core also contains deterministic bounds/frustum culling and built-in GLSL ES 3.10 PBR/unlit shader sources. GPU objects, platform presentation and device-specific backend implementations remain behind the renderer contract.
+
+## Current building boundary
+
+Phase 8 adds deterministic multi-floor buildings using the shared continuous geometry system. A building owns reproducible rooms, wall partitions, doors, windows, stairs, furniture, interaction points, room queries and collision-volume metadata. Runtime building instances use normal entity IDs, scene nodes and material resources, so generated interiors enter the same renderer path as every other runtime object.
 
 ## Building
 
