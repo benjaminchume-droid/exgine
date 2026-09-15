@@ -24,7 +24,8 @@ void test_import_and_registry() {
 void test_rejections() {
     assert(!import_obj("x.obj", "v 0 0\n").success);
     assert(detect_import_format("foo.obj", "") == ImportFormat::Obj);
-    assert(detect_import_format("foo.gltf", "") == ImportFormat::Unknown);
+    assert(detect_import_format("foo.gltf", "") == ImportFormat::Gltf);
+    assert(detect_import_format("foo.glb", "") == ImportFormat::Glb);
 }
 
 void test_runtime_attachment() {
