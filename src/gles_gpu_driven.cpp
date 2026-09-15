@@ -1,5 +1,6 @@
 #include "exgine/gles_gpu_driven.hpp"
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <memory>
