@@ -21,7 +21,7 @@ bool Runtime::generate_building(EntityId id,BuildingConfig config){if(!loaded_)r
 bool Runtime::set_building_door(EntityId id,std::uint64_t door_id,bool open) noexcept{auto it=buildings_.find(id);if(it==buildings_.end())return false;return set_building_door_open(it->second,door_id,open);}
 const BuildingInstance* Runtime::building(EntityId id) const noexcept{const auto it=buildings_.find(id);return it==buildings_.end()?nullptr:&it->second;}
 std::vector<BuildingCollisionVolume> Runtime::building_collision(EntityId id) const{const auto it=buildings_.find(id);if(it==buildings_.end())return {};return active_building_collision(it->second);}
-const BuildingRoom* Runtime::find_building_room(EntityId id,Vec3 position) const noexcept{const auto it=buildings_.find(id);if(it==buildings_.end())return nullptr;return find_building_room(it->second,position);}
+const BuildingRoom* Runtime::find_building_room(EntityId id,Vec3 position) const noexcept{const auto it=buildings_.find(id);if(it==buildings_.end())return nullptr;return exgine::find_building_room(it->second,position);}
 bool Runtime::define_material(Material m,TextureGenerationSettings settings){if(!loaded_||!m.valid())return false;const std::string name=m.name;if(!materials_.define(std::move(m)))return false;const Material* stored=materials_.find(name);if(!stored)return false;auto resource=build_material_resource(*stored,settings);if(!resource)return false;return resources_.store_material(std::move(resource));}
 bool Runtime::stream_world(Vec3 focus,std::uint32_t radius){if(!loaded_||!streamer_)return false;streamer_->update(focus,radius);return true;}
 bool Runtime::set_main_camera(Camera camera) noexcept{return lighting_.set_main_camera(camera);}
