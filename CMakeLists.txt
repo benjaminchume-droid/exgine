@@ -7,11 +7,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(EXGINE_BUILD_DEMO "Build the EXGINE desktop demo" ON)
 option(EXGINE_BUILD_TESTS "Build the EXGINE test suite" ON)
 add_library(exgine_core
-    src/diagnostic.cpp src/ir.cpp src/world.cpp src/open_world.cpp src/performance.cpp src/mobile.cpp src/asset.cpp src/import.cpp src/gltf.cpp src/asset_runtime.cpp src/gpu_residency.cpp src/token.cpp src/lexer.cpp
-    src/parser.cpp src/semantic.cpp src/compiler.cpp src/runtime.cpp src/engine.cpp src/editor.cpp
-    src/geometry.cpp src/character.cpp src/material.cpp src/texture.cpp src/resources.cpp
-    src/scene.cpp src/lighting.cpp src/render.cpp src/shaders.cpp src/gpu.cpp src/building.cpp
-    src/vehicle.cpp src/physics.cpp src/gameplay.cpp src/animation.cpp src/android.cpp)
+    src/diagnostic.cpp src/ir.cpp src/world.cpp src/open_world.cpp src/performance.cpp src/mobile.cpp src/asset.cpp src/import.cpp src/gltf.cpp src/asset_runtime.cpp src/gpu_residency.cpp
+    src/token.cpp src/lexer.cpp src/parser.cpp src/semantic.cpp src/compiler.cpp src/runtime.cpp src/engine.cpp src/editor.cpp
+    src/geometry.cpp src/character.cpp src/material.cpp src/texture.cpp src/resources.cpp src/scene.cpp src/lighting.cpp src/render.cpp src/shaders.cpp src/gpu.cpp
+    src/building.cpp src/vehicle.cpp src/physics.cpp src/gameplay.cpp src/animation.cpp src/android.cpp src/environment.cpp src/game.cpp)
 target_include_directories(exgine_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(exgine_core PUBLIC cxx_std_20)
 target_compile_options(exgine_core PRIVATE
@@ -51,4 +50,6 @@ if(EXGINE_BUILD_TESTS)
   exgine_add_test(exgine_asset_runtime_phase22_tests tests/asset_runtime_phase22_tests.cpp)
   exgine_add_test(exgine_import_phase23_tests tests/import_phase23_tests.cpp)
   exgine_add_test(exgine_gpu_residency_phase24_tests tests/gpu_residency_phase24_tests.cpp)
+  exgine_add_test(exgine_environment_phase26_tests tests/environment_phase26_tests.cpp)
+  exgine_add_test(exgine_game_phase25_tests tests/game_phase25_tests.cpp)
 endif()
