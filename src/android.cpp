@@ -1,8 +1,8 @@
 #include "exgine/android.hpp"
 
 #include <algorithm>
-#include <cmath>
-#include <cstring>
+#include <cstdio>
+#include <new>
 
 #if defined(__ANDROID__)
 #include <EGL/egl.h>
@@ -57,7 +57,7 @@ EGLContext as_context(void* value) noexcept { return reinterpret_cast<EGLContext
 
 std::string egl_error(const char* prefix) {
     const EGLint error = eglGetError();
-    char buffer[64]{};
+    char buffer[80]{};
     std::snprintf(buffer, sizeof(buffer), "%s (EGL error 0x%04x)", prefix, error);
     return buffer;
 }
@@ -265,6 +265,10 @@ bool AndroidEglPresenter::present(const RenderFrame& frame) {
     }
     if (frame.config.backend != RenderBackend::OpenGLES) {
         last_error_ = "render frame backend must be OpenGLES";
+        return false;
+    }
+    if (!frame.valid()) {
+        last_error_ = "render frame is invalid";
         return false;
     }
     if (!resize()) {
