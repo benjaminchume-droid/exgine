@@ -1,0 +1,12 @@
+world World {
+    terrain Terrain { amplitude = 45 seed = 4242 chunk_size = 32 resolution = 33 sea_level = 0 }
+    player Player { x = 7.5 y = 2 z = 12 }
+    npc Guide { x = 11 y = 1 z = 7 }
+    building MainHouse { x = 0 y = 0 z = 0 floors = 2 rooms = 6 doors = 3 windows = 10 stairs = 1 furniture = 6 seed = 4242 }
+    vehicle DemoCar { x = 14 y = 1 z = 3 type = SportsCar }
+    prop HouseAsset { x = -7 y = 0 z = 2 }
+    prop RainFX { x = 0 y = 0 z = 0 }
+    prop PhysicsCrate { x = 2 y = 5 z = 2 }
+    prop HUDCrosshair { x = 7.5 y = 5.2 z = 11.5 }
+    prop HUDHealth { x = 7.5 y = 4.75 z = 11.5 }
+}
