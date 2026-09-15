@@ -8,10 +8,7 @@
 
 namespace exgine {
 
-enum class VehicleType : std::uint8_t {
-    Car, SUV, SportsCar, Pickup, Truck, Bus, Motorcycle,
-    Construction, Emergency, Boat, Aircraft
-};
+enum class VehicleType : std::uint8_t { Car, SUV, SportsCar, Pickup, Truck, Bus, Motorcycle, Construction, Emergency, Boat, Aircraft };
 enum class VehicleWheelRole : std::uint8_t { Steering, Driven, FreeRolling, LandingGear };
 enum class VehicleDoorSide : std::uint8_t { Left, Right, Rear };
 
@@ -45,6 +42,8 @@ struct VehicleConfig {
     std::string metal_material = "aluminium";
     std::string interior_material = "rubber";
 };
+
+[[nodiscard]] VehicleConfig make_vehicle_config(VehicleType type);
 
 struct VehicleWheel {
     std::uint64_t id = 0;
@@ -108,7 +107,6 @@ struct VehicleDefinition {
     std::vector<VehicleLight> lights;
     std::vector<VehiclePhysicsAttachment> physics_attachments;
     std::vector<VehicleCollisionVolume> collision;
-
     [[nodiscard]] bool valid() const noexcept;
 };
 
