@@ -86,25 +86,30 @@ Data-driven `project.exg` manifests define game metadata, startup scenes, assets
 ## Phase 27–53 — High-Fidelity Production Track — IMPLEMENTED FOUNDATION
 Deep production contracts for asset/image processing, asynchronous streaming, navigation, animation state control, weather visuals, audio/UI, persistence, adaptive quality, world streaming, scripting, networking/destruction foundations, and Android shipping configuration are connected in `high_fidelity.hpp/.cpp`.
 
-## Phase 54 — Render Feature Graph
-Explicit ordering and dependency validation for shadows, depth, geometry, lighting, reflections, atmosphere, water, vegetation, VFX, transparency, post-processing and UI.
+## Phase 54 — Render Feature Graph — IMPLEMENTED
+Explicit dependency ordering for shadows, depth, geometry, lighting, reflections, atmosphere, water, vegetation, VFX, transparency, post-processing and UI.
 
-## Phase 55 — Temporal Reconstruction
-Frame history, deterministic jitter and motion/disocclusion-aware temporal state for AA, upscaling and reflection consumers.
+## Phase 55 — Temporal Reconstruction — IMPLEMENTED
+Deterministic frame jitter and history state for temporal AA/upscaling/reflection consumers.
 
-## Phase 56 — Game Flow Lifecycle
+## Phase 56 — Game Flow Lifecycle — IMPLEMENTED
 Boot/loading/menu/playing/paused/saving/error/shutdown lifecycle with validated transitions.
 
-## Phase 57 — Engine Profiling
-Aggregated subsystem timings, call counts and counters usable by desktop, mobile and automated benchmarks.
+## Phase 57 — Engine Profiling — IMPLEMENTED
+Aggregated subsystem timings, call counts and counters for benchmarks and runtime telemetry.
 
-## Phase 58 — Rollback State Buffer
-Bounded ordered simulation history for rollback, deterministic resimulation and future network reconciliation.
+## Phase 58 — Rollback State Buffer — IMPLEMENTED
+Bounded ordered simulation history for rollback and future network reconciliation.
 
-## Phase 59 — World Presentation
+## Phase 59 — World Presentation — IMPLEMENTED
 Shared HDR exposure, sun-elevation and weather-fog presentation state consumed by rendering without coupling to environment simulation.
 
-## Phase 60 — Production Acceptance Gate
+## Phase 60 — Production Acceptance Gate — IMPLEMENTED
 Machine-readable acceptance contract covering project loading, scene activation, player spawn, render frame validity, physics, streaming, save round-trip and Android configuration.
 
-See [`docs/PHASE_54_60.md`](PHASE_54_60.md) for the checkpoint boundaries.
+## Phase 61 — High-Fidelity World Orchestration — IN PROGRESS
+Unifies deterministic terrain sampling, biome classification, water presence, vegetation/structure/road budgets, regional seeds, interest-point-driven world detail and multi-chunk region construction. The service is exposed through `GameSession` so game runtime code can consume one coherent world layer rather than composing independent terrain/streaming systems.
+
+**Checkpoint:** identical inputs produce identical region outputs; negative world coordinates map correctly; world queries return terrain/biome/water state; detail selection prioritizes active interest points; multiple regions remain deterministic and independently seeded.
+
+See the source and checkpoint test for the current Phase 61 boundary.
