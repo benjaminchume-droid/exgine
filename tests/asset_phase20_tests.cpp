@@ -1,6 +1,8 @@
 #include "exgine/asset.hpp"
 
 #include <cassert>
+#include <initializer_list>
+#include <utility>
 #include <vector>
 
 using namespace exgine;
@@ -67,7 +69,6 @@ void test_package_round_trip() {
 }
 
 void test_rejects_missing_dependency_and_malformed_package() {
-    AssetDatabase db;
     auto material = make_asset("materials/missing", {1}, AssetType::Material);
     material.dependencies = {123456};
     const auto packed = pack_assets({material});
@@ -91,8 +92,9 @@ void test_cycle_rejected() {
     b.dependencies = {a.id};
     assert(db.add(a));
     assert(db.add(b));
+    assert(db.dependencies_resolved(a.id));
+    assert(db.dependencies_resolved(b.id));
     assert(db.load_order().empty());
-    assert(!db.dependencies_resolved(a.id) || !db.dependencies_resolved(b.id));
 }
 } // namespace
 
