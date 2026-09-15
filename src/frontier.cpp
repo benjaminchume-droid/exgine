@@ -45,13 +45,11 @@ void TemporalReconstruction::resize(std::uint32_t width,std::uint32_t height) no
 }
 
 TemporalJitter TemporalReconstruction::next_jitter() noexcept {
-    static constexpr float inv=1.0f/16777216.0f;
     const std::uint32_t i=++history_.jitter.index;
     auto radical_inverse=[](std::uint32_t n)->float { float r=0.0f,f=0.5f; while(n){r+=(n&1U)?f:0.0f;n>>=1U;f*=0.5f;} return r; };
     history_.jitter.x=radical_inverse(i)-0.5f;
     std::uint32_t n=i; float r=0.0f,f=1.0f/3.0f; while(n){r+=(n%3U==1U?f:n%3U==2U?2.0f*f:0.0f);n/=3U;f/=3.0f;}
     history_.jitter.y=r-0.5f;
-    (void)inv;
     return history_.jitter;
 }
 
@@ -59,10 +57,11 @@ void TemporalReconstruction::begin_frame(std::uint64_t frame_id,float motion_mag
     const float motion=std::clamp(motion_magnitude,0.0f,1.0f);
     const float disco=std::clamp(disocclusion,0.0f,1.0f);
     history_.blend=std::clamp(0.94f-motion*0.55f-disco*0.75f,0.05f,0.95f);
-    if(history_.frame_id!=0 && frame_id!=history_.frame_id+1) history_.valid=false;
+    const std::uint64_t previous=history_.frame_id;
+    const bool continuous=(previous==0 || frame_id==previous+1);
     history_.frame_id=frame_id;
-    history_.valid=(history_.width>0 && history_.height>0);
-    next_jitter();
+    history_.valid=(history_.width>0 && history_.height>0 && continuous);
+    (void)next_jitter();
 }
 
 bool GameFlowController::can_transition(GameFlowState next) const noexcept {
