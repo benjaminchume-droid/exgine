@@ -1,6 +1,6 @@
 #include "exgine/runtime.hpp"
+#include <algorithm>
 #include <limits>
-#include <type_traits>
 #include <utility>
 namespace exgine { namespace {
 const Node* terrain_node(const IR& ir){for(const auto& n:ir.root.children)if(n.kind==NodeKind::Terrain)return &n;return nullptr;}
