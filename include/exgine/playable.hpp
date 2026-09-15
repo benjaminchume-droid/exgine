@@ -61,6 +61,7 @@ private:
     PlayableStatus status_=PlayableStatus::Closed;
     std::uint64_t frame_id_=0;
     bool project_open_=false;
+    bool save_roundtrip_=false;
 
     bool compile_render_plan() noexcept;
     void refresh_acceptance() noexcept;
