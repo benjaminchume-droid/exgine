@@ -32,8 +32,8 @@ Generate deterministic multi-floor buildings with rooms, walls, doors, windows, 
 ## Phase 9 — Vehicles and Complex Objects — IMPLEMENTED
 Generate configuration-driven continuous 3D vehicles across multiple families using shared geometry/material/resource/render contracts.
 
-## Phase 10 — Physics — CORE IMPLEMENTED / ADVANCED EXTENSIONS PLANNED
-Deliver the stable physics contract and connected CPU rigid-body core; advanced CCD, vehicle dynamics, buoyancy and articulated systems remain on the extension roadmap.
+## Phase 10 — Physics — CORE IMPLEMENTED / ADVANCED EXTENSIONS IN PROGRESS
+Deliver the stable physics contract and connected CPU rigid-body core; advanced CCD/TOI, high-fidelity contacts, buoyancy, articulated simulation and specialized mobile backends continue through later milestones.
 
 ## Phase 11 — Characters, NPCs, Items and Gameplay — IMPLEMENTED FOUNDATION
 Character controllers, gameplay state, needs, damage, inventory and NPC scheduling foundations are connected to runtime physics.
@@ -80,13 +80,31 @@ Persistent OpenGL ES mesh residency is managed by asset identity with configurab
 ## Phase 25 — Universal Game Project and Runtime — IMPLEMENTED
 Data-driven `project.exg` manifests define game metadata, startup scenes, assets, runtime settings and calendar configuration. `GameRuntime` binds one existing Runtime to project scenes, variables, update ticking and save/restore state. Scene storage is supplied by an application callback, keeping the engine independent of filesystem/package/network choices.
 
-**Checkpoint:** project parsing/serialization, scene activation, runtime ticking, variables and save/restore pass without game-specific C++ branches.
-
 ## Phase 26 — Universal Time, Day/Night, Seasons and Weather State — IMPLEMENTED
-`EnvironmentSystem` provides continuous simulation time, day/year/week counters, configurable Dawn/Morning/Afternoon/Dusk/Evening/Night phases, sun position, named seasons with reusable coefficients and a generic weather/intensity channel.
+`EnvironmentSystem` provides continuous simulation time, day/year/week counters, configurable Dawn/Morning/Afternoon/Dusk/Evening/Night phases, named seasons with reusable coefficients and a generic weather/intensity channel.
 
-**Checkpoint:** time progression, day boundaries, season selection, day-phase derivation and weather-state validation pass independently of any specific game genre.
+## Phase 27–53 — High-Fidelity Production Track — IMPLEMENTED FOUNDATION
+Deep production contracts for asset/image processing, asynchronous streaming, navigation, animation state control, weather visuals, audio/UI, persistence, adaptive quality, world streaming, scripting, networking/destruction foundations, and Android shipping configuration are connected in `high_fidelity.hpp/.cpp`.
 
-## Next extensions
+## Phase 54 — Render Feature Graph
+Explicit ordering and dependency validation for shadows, depth, geometry, lighting, reflections, atmosphere, water, vegetation, VFX, transparency, post-processing and UI.
 
-Continue by deepening content/runtime integration rather than hardcoding game rules: full glTF texture/image material binding, asynchronous package IO, navigation/pathfinding, vehicle-specific simulation, animation state machines, procedural weather rendering, audio, UI, and final Android application packaging can all consume the existing universal contracts.
+## Phase 55 — Temporal Reconstruction
+Frame history, deterministic jitter and motion/disocclusion-aware temporal state for AA, upscaling and reflection consumers.
+
+## Phase 56 — Game Flow Lifecycle
+Boot/loading/menu/playing/paused/saving/error/shutdown lifecycle with validated transitions.
+
+## Phase 57 — Engine Profiling
+Aggregated subsystem timings, call counts and counters usable by desktop, mobile and automated benchmarks.
+
+## Phase 58 — Rollback State Buffer
+Bounded ordered simulation history for rollback, deterministic resimulation and future network reconciliation.
+
+## Phase 59 — World Presentation
+Shared HDR exposure, sun-elevation and weather-fog presentation state consumed by rendering without coupling to environment simulation.
+
+## Phase 60 — Production Acceptance Gate
+Machine-readable acceptance contract covering project loading, scene activation, player spawn, render frame validity, physics, streaming, save round-trip and Android configuration.
+
+See [`docs/PHASE_54_60.md`](PHASE_54_60.md) for the checkpoint boundaries.
