@@ -1,0 +1,36 @@
+#pragma once
+#include "exgine/render.hpp"
+#include <cstddef>
+#include <cstdint>
+#include <string>
+namespace exgine {
+using GlEnum=std::uint32_t; using GlInt=std::int32_t; using GlUInt=std::uint32_t; using GlSize=std::ptrdiff_t; using GlFloat=float; using GlBool=std::uint8_t;
+using GlVoid=void;
+using PFNGLCLEARPROC=void(*)(GlUInt); using PFNGLCLEARCOLORPROC=void(*)(GlFloat,GlFloat,GlFloat,GlFloat); using PFNGLVIEWPORTPROC=void(*)(GlInt,GlInt,GlInt,GlInt); using PFNGLENABLEPROC=void(*)(GlEnum); using PFNGLDISABLEPROC=void(*)(GlEnum); using PFNGLDEPTHFUNCPROC=void(*)(GlEnum); using PFNGLBLENDFUNCPROC=void(*)(GlEnum,GlEnum);
+using PFNGLCREATESHADERPROC=GlUInt(*)(GlEnum); using PFNGLSHADERSOURCEPROC=void(*)(GlUInt,GlSize,const char* const*,const GlInt*); using PFNGLCOMPILESHADERPROC=void(*)(GlUInt); using PFNGLGETSHADERIVPROC=void(*)(GlUInt,GlEnum,GlInt*); using PFNGLGETSHADERINFOLOGPROC=void(*)(GlUInt,GlInt,GlInt*,char*); using PFNGLDELETESHADERPROC=void(*)(GlUInt);
+using PFNGLCREATEPROGRAMPROC=GlUInt(*)(); using PFNGLATTACHSHADERPROC=void(*)(GlUInt,GlUInt); using PFNGLLINKPROGRAMPROC=void(*)(GlUInt); using PFNGLGETPROGRAMIVPROC=void(*)(GlUInt,GlEnum,GlInt*); using PFNGLGETPROGRAMINFOLOGPROC=void(*)(GlUInt,GlInt,GlInt*,char*); using PFNGLUSEPROGRAMPROC=void(*)(GlUInt); using PFNGLDELETEPROGRAMPROC=void(*)(GlUInt); using PFNGLGETUNIFORMLOCATIONPROC=GlInt(*)(GlUInt,const char*);
+using PFNGLUNIFORMMATRIX4FVPROC=void(*)(GlInt,GlInt,GlBool,const GlFloat*); using PFNGLUNIFORM3FPROC=void(*)(GlInt,GlFloat,GlFloat,GlFloat); using PFNGLUNIFORM4FPROC=void(*)(GlInt,GlFloat,GlFloat,GlFloat,GlFloat); using PFNGLUNIFORM1FPROC=void(*)(GlInt,GlFloat); using PFNGLUNIFORM1IPROC=void(*)(GlInt,GlInt);
+using PFNGLGENBUFFERSPROC=void(*)(GlInt,GlUInt*); using PFNGLBINDBUFFERPROC=void(*)(GlEnum,GlUInt); using PFNGLBUFFERDATAPROC=void(*)(GlEnum,GlSize,const void*,GlEnum); using PFNGLDELETEBUFFERSPROC=void(*)(GlInt,const GlUInt*); using PFNGLBINDBUFFERBASEPROC=void(*)(GlEnum,GlUInt,GlUInt);
+using PFNGLGENVERTEXARRAYSPROC=void(*)(GlInt,GlUInt*); using PFNGLBINDVERTEXARRAYPROC=void(*)(GlUInt); using PFNGLDELETEVERTEXARRAYSPROC=void(*)(GlInt,const GlUInt*); using PFNGLENABLEVERTEXATTRIBARRAYPROC=void(*)(GlUInt); using PFNGLVERTEXATTRIBPOINTERPROC=void(*)(GlUInt,GlInt,GlEnum,GlBool,GlInt,const void*); using PFNGLDRAWELEMENTSPROC=void(*)(GlEnum,GlInt,GlEnum,const void*);
+struct OpenGLESApi {
+ PFNGLCLEARPROC Clear=nullptr; PFNGLCLEARCOLORPROC ClearColor=nullptr; PFNGLVIEWPORTPROC Viewport=nullptr; PFNGLENABLEPROC Enable=nullptr; PFNGLDISABLEPROC Disable=nullptr; PFNGLDEPTHFUNCPROC DepthFunc=nullptr; PFNGLBLENDFUNCPROC BlendFunc=nullptr;
+ PFNGLCREATESHADERPROC CreateShader=nullptr; PFNGLSHADERSOURCEPROC ShaderSource=nullptr; PFNGLCOMPILESHADERPROC CompileShader=nullptr; PFNGLGETSHADERIVPROC GetShaderiv=nullptr; PFNGLGETSHADERINFOLOGPROC GetShaderInfoLog=nullptr; PFNGLDELETESHADERPROC DeleteShader=nullptr;
+ PFNGLCREATEPROGRAMPROC CreateProgram=nullptr; PFNGLATTACHSHADERPROC AttachShader=nullptr; PFNGLLINKPROGRAMPROC LinkProgram=nullptr; PFNGLGETPROGRAMIVPROC GetProgramiv=nullptr; PFNGLGETPROGRAMINFOLOGPROC GetProgramInfoLog=nullptr; PFNGLUSEPROGRAMPROC UseProgram=nullptr; PFNGLDELETEPROGRAMPROC DeleteProgram=nullptr; PFNGLGETUNIFORMLOCATIONPROC GetUniformLocation=nullptr;
+ PFNGLUNIFORMMATRIX4FVPROC UniformMatrix4fv=nullptr; PFNGLUNIFORM3FPROC Uniform3f=nullptr; PFNGLUNIFORM4FPROC Uniform4f=nullptr; PFNGLUNIFORM1FPROC Uniform1f=nullptr; PFNGLUNIFORM1IPROC Uniform1i=nullptr;
+ PFNGLGENBUFFERSPROC GenBuffers=nullptr; PFNGLBINDBUFFERPROC BindBuffer=nullptr; PFNGLBUFFERDATAPROC BufferData=nullptr; PFNGLDELETEBUFFERSPROC DeleteBuffers=nullptr; PFNGLBINDBUFFERBASEPROC BindBufferBase=nullptr;
+ PFNGLGENVERTEXARRAYSPROC GenVertexArrays=nullptr; PFNGLBINDVERTEXARRAYPROC BindVertexArray=nullptr; PFNGLDELETEVERTEXARRAYSPROC DeleteVertexArrays=nullptr; PFNGLENABLEVERTEXATTRIBARRAYPROC EnableVertexAttribArray=nullptr; PFNGLVERTEXATTRIBPOINTERPROC VertexAttribPointer=nullptr; PFNGLDRAWELEMENTSPROC DrawElements=nullptr;
+ [[nodiscard]] bool complete() const noexcept;
+};
+struct GpuSubmitResult { bool success=false; std::size_t draw_calls=0; std::size_t triangles=0; std::string error; };
+class OpenGLESRenderer {
+public:
+ explicit OpenGLESRenderer(OpenGLESApi api) noexcept : api_(api) {}
+ [[nodiscard]] bool ready() const noexcept;
+ [[nodiscard]] GpuSubmitResult submit(const RenderFrame& frame);
+ void release() noexcept;
+private:
+ OpenGLESApi api_{}; GlUInt program_=0; GlInt u_vp_=-1,u_model_=-1,u_camera_=-1,u_ambient_=-1,u_base_=-1,u_rough_=-1,u_metal_=-1,u_emission_=-1,u_opacity_=-1,u_light_dir_=-1,u_light_color_=-1,u_light_intensity_=-1;
+ [[nodiscard]] bool ensure_program(std::string& error);
+ [[nodiscard]] bool compile_shader(GlEnum type,const char* source,GlUInt& shader,std::string& error);
+};
+}
