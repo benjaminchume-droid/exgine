@@ -62,13 +62,13 @@ Generate configuration-driven continuous 3D vehicle assemblies for cars, SUVs, s
 
 **Checkpoint:** every supported vehicle family generates as a normal runtime entity using shared geometry/material/resource/render contracts, preserves caller-controlled dimensional configuration, and remains deterministic for an explicit seed.
 
-## Phase 10 — Physics — CONTRACT ESTABLISHED
+## Phase 10 — Physics — CORE IMPLEMENTED / ADVANCED EXTENSIONS PLANNED
 
-`include/exgine/physics.hpp` now defines the production solver-facing contract for real-time 3D rigid bodies: body modes, collision shapes, materials, contacts, CCD motion quality, constraints, queries, sleeping, fixed-step simulation, determinism and callbacks.
+`include/exgine/physics.hpp` defines the stable production-facing contract. `src/physics.cpp` now provides the connected CPU rigid-body core: fixed-step integration, gravity, force/torque integration, broadphase candidates, basic sphere/box and bounds-based shape collision, sequential-impulse contact response, friction/restitution, basic constraints and motors, sleeping/waking, contact callbacks, and spatial queries.
 
-The solver implementation remains the next phase: broadphase/narrowphase collision, constraint solving, continuous collision detection, character controllers, vehicle dynamics, triggers, sleeping, buoyancy and deterministic simulation behavior must operate on existing runtime entities and generated geometry/attachments.
+The remaining advanced physics scope is intentionally explicit: continuous collision detection and TOI, high-fidelity convex/triangle-mesh narrowphase, full hinge/slider/cone-twist solving, character controllers, vehicle tire/drivetrain dynamics, buoyancy/hydrodynamics, articulated/soft-body systems and mobile parallel acceleration.
 
-**Checkpoint:** contract and integration boundaries are stable before solver implementation begins.
+**Checkpoint:** the contract and current solver core are integrated into Runtime; future physics work must extend the same handles, descriptors, query/filter semantics and ownership model.
 
 ## Phase 11 — Characters, NPCs, Items and Gameplay
 
