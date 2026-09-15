@@ -14,6 +14,10 @@ enum class NodeKind {
     Vegetation,
     Building,
     Vehicle,
+    Player,
+    NPC,
+    Bridge,
+    Prop,
     Property
 };
 

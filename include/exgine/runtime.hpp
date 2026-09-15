@@ -1,8 +1,10 @@
 #pragma once
 
+#include "exgine/geometry.hpp"
 #include "exgine/ir.hpp"
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -25,6 +27,7 @@ struct Entity {
     Transform transform{};
     bool active = true;
     std::vector<Property> properties;
+    std::shared_ptr<MeshAssembly> geometry;
 };
 
 class EntityRegistry {
@@ -56,6 +59,7 @@ public:
     void update(double delta_seconds) noexcept;
     void reset() noexcept;
 
+    bool attach_geometry(EntityId id, MeshAssembly geometry);
     [[nodiscard]] const WorldState& state() const noexcept { return state_; }
     [[nodiscard]] WorldState& state() noexcept { return state_; }
 

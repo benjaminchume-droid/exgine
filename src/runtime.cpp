@@ -8,7 +8,7 @@ namespace exgine {
 EntityId EntityRegistry::create(NodeKind kind, std::string name) {
     if (next_id_ == invalid_entity || next_id_ == std::numeric_limits<EntityId>::max()) return invalid_entity;
     const EntityId id = next_id_++;
-    entities_.emplace(id, Entity{id, kind, std::move(name), {}, true, {}});
+    entities_.emplace(id, Entity{id, kind, std::move(name), {}, true, {}, nullptr});
     return id;
 }
 
@@ -30,7 +30,6 @@ void EntityRegistry::clear() noexcept {
 }
 
 namespace {
-
 bool instantiate(const Node& node, EntityRegistry& registry, EntityId& world_entity) {
     const EntityId id = registry.create(node.kind, node.name);
     if (id == invalid_entity) return false;
@@ -42,7 +41,6 @@ bool instantiate(const Node& node, EntityRegistry& registry, EntityId& world_ent
     }
     return true;
 }
-
 } // namespace
 
 bool Runtime::load(const IR& ir) {
@@ -60,6 +58,13 @@ void Runtime::update(double delta_seconds) noexcept {
     if (!loaded_ || delta_seconds < 0.0) return;
     state_.elapsed_seconds += delta_seconds;
     ++state_.tick;
+}
+
+bool Runtime::attach_geometry(EntityId id, MeshAssembly geometry) {
+    auto* entity = state_.entities.get(id);
+    if (entity == nullptr || !geometry.valid()) return false;
+    entity->geometry = std::make_shared<MeshAssembly>(std::move(geometry));
+    return true;
 }
 
 void Runtime::reset() noexcept {

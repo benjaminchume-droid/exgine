@@ -18,6 +18,8 @@ add_library(exgine_core
     src/compiler.cpp
     src/runtime.cpp
     src/engine.cpp
+    src/geometry.cpp
+    src/character.cpp
 )
 
 target_include_directories(exgine_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
