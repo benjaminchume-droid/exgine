@@ -9,7 +9,7 @@ option(EXGINE_BUILD_TESTS "Build the EXGINE test suite" ON)
 add_library(exgine_core
     src/diagnostic.cpp src/ir.cpp src/world.cpp src/open_world.cpp src/performance.cpp src/mobile.cpp src/asset.cpp src/import.cpp src/gltf.cpp src/asset_runtime.cpp src/gpu_residency.cpp
     src/token.cpp src/lexer.cpp src/parser.cpp src/semantic.cpp src/compiler.cpp src/runtime.cpp src/engine.cpp src/editor.cpp
-    src/geometry.cpp src/character.cpp src/material.cpp src/texture.cpp src/resources.cpp src/scene.cpp src/lighting.cpp src/render.cpp src/shaders.cpp src/gpu.cpp
+    src/geometry.cpp src/character.cpp src/material.cpp src/texture.cpp src/material_pipeline.cpp src/resources.cpp src/scene.cpp src/lighting.cpp src/render.cpp src/shaders.cpp src/gpu.cpp
     src/building.cpp src/vehicle.cpp src/vehicle_dynamics.cpp src/physics.cpp src/gameplay.cpp src/animation.cpp src/android.cpp src/environment.cpp src/game.cpp src/production_runtime_fixed.cpp src/production_runtime_tail.cpp src/high_fidelity.cpp src/frontier.cpp src/asset_pipeline.cpp src/advanced_physics.cpp src/world_high_fidelity.cpp)
 target_include_directories(exgine_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(exgine_core PUBLIC cxx_std_20)
@@ -59,4 +59,5 @@ if(EXGINE_BUILD_TESTS)
   exgine_add_test(exgine_asset_pipeline_phase27_tests tests/asset_pipeline_phase27_tests.cpp)
   exgine_add_test(exgine_advanced_physics_phase2_tests tests/advanced_physics_phase2_tests.cpp)
   exgine_add_test(exgine_world_high_fidelity_tests tests/world_high_fidelity_tests.cpp)
+  exgine_add_test(exgine_material_pipeline_phase4_tests tests/material_pipeline_phase4_tests.cpp)
 endif()
