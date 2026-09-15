@@ -37,12 +37,14 @@ Game source / EXGINE DSL / language adapters
                 Optimizer
                     |
              Native runtime
-          /        |        \
-      World     Physics    Scene
-          \        |        /
-              Renderer
-                    |
-          Android / Desktop
+       /        |          |        \
+    World   Entities   Resources    Scene
+                                  /    \
+                            Lighting  Camera
+                                  \    /
+                                Renderer
+                                    |
+                           Android / Desktop
 ```
 
 ## Development model
@@ -65,33 +67,35 @@ A phase is complete only when its checkpoint passes.
 
 | Phase | Goal | Status |
 |---|---|---|
-| 0 | Architecture and production-grade foundation | In progress |
-| 1 | EXGINE language: lexer, parser, AST and semantic validation | Planned |
-| 2 | Runtime and scene architecture | Planned |
-| 3 | Procedural world generation and streaming | Planned |
-| 4 | Procedural objects and geometry | Planned |
-| 5 | 3D renderer and GPU abstraction | Planned |
-| 6 | Physics and gameplay systems | Planned |
-| 7 | Asset and resource pipeline | Planned |
-| 8 | Android/mobile runtime | Planned |
-| 9 | Automatic performance system | Planned |
-| 10 | Editor and production tooling | Planned |
+| 0 | Architecture and production-grade foundation | Implemented |
+| 1 | EXGINE language: lexer, parser, AST and semantic validation | Implemented |
+| 2 | Runtime and entity lifecycle | Implemented |
+| 3 | Continuous geometry and reusable object foundations | Implemented foundation |
+| 4 | Materials, procedural textures and resource cache | Implemented |
+| 5 | Procedural world, terrain, water, biomes and streaming | Implemented |
+| 6 | Scene graph, lighting and camera state | Implemented |
+| 7 | Renderer frame pipeline and shader contracts | Implemented |
+| 8 | Interactive buildings | Planned |
+| 9 | Vehicles and complex objects | Planned |
+| 10 | Full physics | Planned |
+| 11 | Characters, NPCs, items and gameplay | Planned |
+| 12 | Open-world scale and streaming | Planned |
+| 13 | Android/mobile runtime and performance | Planned |
+| 14 | Editor and production tooling | Planned |
 
-See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full plan and [`docs/PHASE_0.md`](docs/PHASE_0.md) for the current foundation checkpoint.
+See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the full plan and the phase checkpoint documents for implementation boundaries.
 
 ## Current architecture
-
-Phase 0 establishes these boundaries:
 
 ```text
 include/exgine/   Public engine API
 src/              Engine implementation
 examples/         Executable examples
- tests/            Automated verification
- docs/             Architecture and development contracts
+tests/            Automated verification
+docs/             Architecture and development contracts
 ```
 
-The core is C++20. Platform-specific rendering and mobile code will be introduced behind explicit interfaces instead of leaking platform details into the core.
+The core is C++20. Platform-specific rendering and mobile code are introduced behind explicit interfaces so graphics and device details do not leak into the portable engine core.
 
 ## Design goals
 
@@ -100,16 +104,16 @@ The core is C++20. Platform-specific rendering and mobile code will be introduce
 - Mobile-first performance
 - Deterministic procedural generation
 - Chunked world streaming
-- Automatic LOD and scalable rendering quality
+- Scalable rendering quality
 - Declarative game descriptions
 - Shared IR for multiple source languages
 - Android and desktop targets
 - Clear subsystem boundaries
 - Testable, incremental architecture without disposable placeholders
 
-## Non-goals for the early engine
+## Current renderer boundary
 
-EXGINE will not initially attempt to support every programming language, photorealistic AAA rendering, or a full editor. Those systems will be added after the core architecture can support them cleanly.
+Phase 7 now converts live runtime state into a validated `RenderFrame` containing camera matrices, visible mesh draw calls, material/texture bindings, and active lighting. The core also contains deterministic bounds/frustum culling and built-in GLSL ES 3.10 PBR/unlit shader sources. GPU objects, platform presentation and device-specific backend implementations remain behind the renderer contract.
 
 ## Building
 
@@ -118,6 +122,7 @@ EXGINE uses CMake and C++20.
 ```bash
 cmake -S . -B build
 cmake --build build
+ctest --test-dir build --output-on-failure
 ```
 
 The repository must remain buildable as the engine grows.
