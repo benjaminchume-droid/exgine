@@ -26,6 +26,6 @@ precision highp float;layout(location=0)out vec4 o_color;uniform vec4 u_color;vo
 }
 bool ShaderProgram::valid()const noexcept{return !name.empty()&&!vertex_source.empty()&&!fragment_source.empty()&&vertex_source.find("#version 310 es")!=std::string::npos&&fragment_source.find("#version 310 es")!=std::string::npos;}
 ShaderProgram make_pbr_shader(){return {"pbr",pbr_vs,pbr_fs};} ShaderProgram make_unlit_shader(){return {"unlit",unlit_vs,unlit_fs};} ShaderProgram make_mobile_pbr_shader(){return {"mobile_pbr",mobile_vs,mobile_fs};} ShaderProgram make_mobile_skinned_pbr_shader(){return {"mobile_skinned_pbr",skinned_vs,mobile_fs};} ShaderProgram make_mobile_textured_pbr_shader(){return {"mobile_textured_pbr",mobile_vs,textured_fs};} ShaderProgram make_mobile_skinned_textured_pbr_shader(){return {"mobile_skinned_textured_pbr",skinned_vs,textured_fs};}
-ShaderLibrary::ShaderLibrary(){auto p=make_pbr_shader(),u=make_unlit_shader(),t=make_mobile_textured_pbr_shader();if(p.valid())programs_.emplace(p.name,std::move(p));if(u.valid())programs_.emplace(u.name,std::move(u));if(t.valid())programs_.emplace(t.name,std::move(t));}
+ShaderLibrary::ShaderLibrary(){auto p=make_pbr_shader(),u=make_unlit_shader();if(p.valid())programs_.emplace(p.name,std::move(p));if(u.valid())programs_.emplace(u.name,std::move(u));}
 const ShaderProgram* ShaderLibrary::find(std::string_view name)const noexcept{auto it=programs_.find(std::string{name});return it==programs_.end()?nullptr:&it->second;}
 }
