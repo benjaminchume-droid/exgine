@@ -3,7 +3,6 @@
 EXGINE is developed as connected phases. A phase is complete only after its repository-wide checkpoint passes.
 
 ## Phase 0 — Foundation — IMPLEMENTED
-
 Establish project contracts: C++20 build, public API boundaries, diagnostics, version identity, deterministic core behavior, tests, documentation, and repository structure.
 
 ## Phase 1 — Language — IMPLEMENTED
@@ -76,6 +75,16 @@ Decoded assets can be cached by stable `AssetId`, looked up by URI and attached 
 
 **Checkpoint:** imported geometry is registered once, instantiated on a live entity and remains inside the existing Runtime/SceneGraph/Renderer ownership model.
 
+## Phase 23 — glTF / GLB Ingestion — IMPLEMENTED FOUNDATION
+Memory-based glTF 2.0 and GLB ingestion now decodes embedded base64 buffers, indexed/non-indexed mesh primitives, positions/normals/UVs, basic metallic/roughness materials and node transforms into existing EXGINE contracts.
+
+**Checkpoint:** valid glTF/GLB content becomes existing EXGINE mesh/material/node data, malformed/version-incompatible inputs are rejected, and importer output retains deterministic asset identity.
+
+## Phase 24 — GPU Asset Residency and Streaming — IMPLEMENTED FOUNDATION
+Persistent OpenGL ES VAO/VBO/IBO residency is now managed by asset identity with configurable byte/mesh budgets, frame touches, deterministic least-recently-used-style eviction telemetry and explicit teardown.
+
+**Checkpoint:** the residency layer uses the existing OpenGL ES procedure table, owns only GPU mesh objects, releases them deterministically, and does not duplicate runtime/entity/scene ownership.
+
 ## Next extensions
 
-Phase 23 can expand the importer set to glTF/GLB, including textures, materials, skeletons and animations. Phase 24 can add GPU resource residency and asynchronous streaming on top of the stable asset identities and runtime instancing layer.
+Phase 25 extends glTF to texture/image decoding and full material texture bindings. Phase 26 extends residency into frame-aware asynchronous streaming and render-time cache reuse.
