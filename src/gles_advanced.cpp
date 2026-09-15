@@ -4,8 +4,7 @@
 #include <cmath>
 #include <string>
 
-namespace exgine {
-namespace {
+namespace exgine { namespace {
 constexpr GlEnum GL_FRAMEBUFFER=0x8D40, GL_COLOR_ATTACHMENT0=0x8CE0, GL_DEPTH_ATTACHMENT=0x8D00;
 constexpr GlEnum GL_FRAMEBUFFER_COMPLETE=0x8CD5, GL_DEPTH_COMPONENT24=0x81A6, GL_DEPTH_COMPONENT=0x1902;
 constexpr GlEnum GL_RGBA16F=0x881A, GL_RGBA=0x1908, GL_HALF_FLOAT=0x140B, GL_UNSIGNED_INT=0x1405;
@@ -15,76 +14,25 @@ constexpr GlEnum GL_DEPTH_TEST=0x0B71, GL_BLEND=0x0BE2, GL_LESS=0x0201, GL_TRIAN
 constexpr GlEnum GL_DEPTH_BUFFER_BIT=0x00000100, GL_VERTEX_SHADER=0x8B31, GL_FRAGMENT_SHADER=0x8B30;
 constexpr GlEnum GL_TEXTURE0=0x84C0, GL_TEXTURE1=0x84C1;
 struct Target { GlUInt fbo=0,color=0,depth=0; int width=0,height=0; };
-
-bool make_color_target(OpenGLESApi& a,int w,int h,Target& t,std::string& e){
-    t.width=w;t.height=h;
-    a.GenTextures(1,&t.color); a.BindTexture(GL_TEXTURE_2D,t.color);
-    a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-    a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
-    a.TexImage2D(GL_TEXTURE_2D,0,GL_RGBA16F,w,h,0,GL_RGBA,GL_HALF_FLOAT,nullptr);
-    a.GenTextures(1,&t.depth);a.BindTexture(GL_TEXTURE_2D,t.depth);
-    a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-    a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
-    a.TexImage2D(GL_TEXTURE_2D,0,GL_DEPTH_COMPONENT24,w,h,0,GL_DEPTH_COMPONENT,GL_UNSIGNED_INT,nullptr);
-    a.GenFramebuffers(1,&t.fbo);a.BindFramebuffer(GL_FRAMEBUFFER,t.fbo);
-    a.FramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,t.color,0);
-    a.FramebufferTexture2D(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_TEXTURE_2D,t.depth,0);
-    if(a.CheckFramebufferStatus(GL_FRAMEBUFFER)!=GL_FRAMEBUFFER_COMPLETE){e="HDR framebuffer is incomplete";return false;}return true;
-}
-
-bool make_depth_target(OpenGLESApi& a,int size,Target& t,std::string& e){
-    t.width=t.height=size;a.GenTextures(1,&t.depth);a.BindTexture(GL_TEXTURE_2D,t.depth);
-    a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
-    a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);
-    a.TexImage2D(GL_TEXTURE_2D,0,GL_DEPTH_COMPONENT24,size,size,0,GL_DEPTH_COMPONENT,GL_UNSIGNED_INT,nullptr);
-    a.GenFramebuffers(1,&t.fbo);a.BindFramebuffer(GL_FRAMEBUFFER,t.fbo);a.FramebufferTexture2D(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_TEXTURE_2D,t.depth,0);
-    if(a.CheckFramebufferStatus(GL_FRAMEBUFFER)!=GL_FRAMEBUFFER_COMPLETE){e="shadow framebuffer is incomplete";return false;}return true;
-}
-void destroy_target(OpenGLESApi& a,Target& t){if(t.fbo)a.DeleteFramebuffers(1,&t.fbo);if(t.color)a.DeleteTextures(1,&t.color);if(t.depth)a.DeleteTextures(1,&t.depth);t={};}
-
+bool make_color_target(OpenGLESApi&a,int w,int h,Target&t,std::string&e){t.width=w;t.height=h;a.GenTextures(1,&t.color);a.BindTexture(GL_TEXTURE_2D,t.color);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);a.TexImage2D(GL_TEXTURE_2D,0,GL_RGBA16F,w,h,0,GL_RGBA,GL_HALF_FLOAT,nullptr);a.GenTextures(1,&t.depth);a.BindTexture(GL_TEXTURE_2D,t.depth);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);a.TexImage2D(GL_TEXTURE_2D,0,GL_DEPTH_COMPONENT24,w,h,0,GL_DEPTH_COMPONENT,GL_UNSIGNED_INT,nullptr);a.GenFramebuffers(1,&t.fbo);a.BindFramebuffer(GL_FRAMEBUFFER,t.fbo);a.FramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,t.color,0);a.FramebufferTexture2D(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_TEXTURE_2D,t.depth,0);if(a.CheckFramebufferStatus(GL_FRAMEBUFFER)!=GL_FRAMEBUFFER_COMPLETE){e="HDR framebuffer is incomplete";return false;}return true;}
+bool make_depth_target(OpenGLESApi&a,int size,Target&t,std::string&e){t.width=t.height=size;a.GenTextures(1,&t.depth);a.BindTexture(GL_TEXTURE_2D,t.depth);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_CLAMP_TO_EDGE);a.TexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_CLAMP_TO_EDGE);a.TexImage2D(GL_TEXTURE_2D,0,GL_DEPTH_COMPONENT24,size,size,0,GL_DEPTH_COMPONENT,GL_UNSIGNED_INT,nullptr);a.GenFramebuffers(1,&t.fbo);a.BindFramebuffer(GL_FRAMEBUFFER,t.fbo);a.FramebufferTexture2D(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT,GL_TEXTURE_2D,t.depth,0);if(a.CheckFramebufferStatus(GL_FRAMEBUFFER)!=GL_FRAMEBUFFER_COMPLETE){e="shadow framebuffer is incomplete";return false;}return true;}
+void destroy_target(OpenGLESApi&a,Target&t){if(t.fbo)a.DeleteFramebuffers(1,&t.fbo);if(t.color)a.DeleteTextures(1,&t.color);if(t.depth)a.DeleteTextures(1,&t.depth);t={};}
 const char* depth_vs=R"GLSL(#version 310 es
-layout(location=0) in vec3 a_position;layout(location=8) in vec4 a_bone_ids;layout(location=9) in vec4 a_bone_weights;
-uniform mat4 u_light_vp;uniform mat4 u_model;uniform mat4 u_bones[128];uniform int u_bone_count;
-void main(){vec4 p=vec4(a_position,1.0);if(u_bone_count>0){mat4 s=mat4(0.0);s+=u_bones[int(a_bone_ids.x)]*a_bone_weights.x;s+=u_bones[int(a_bone_ids.y)]*a_bone_weights.y;s+=u_bones[int(a_bone_ids.z)]*a_bone_weights.z;s+=u_bones[int(a_bone_ids.w)]*a_bone_weights.w;p=s*p;}gl_Position=u_light_vp*u_model*p;})GLSL";
+layout(location=0) in vec3 a_position;layout(location=8) in vec4 a_bone_ids;layout(location=9) in vec4 a_bone_weights;uniform mat4 u_light_vp;uniform mat4 u_model;uniform mat4 u_bones[128];uniform int u_bone_count;void main(){vec4 p=vec4(a_position,1.0);if(u_bone_count>0){mat4 s=mat4(0.0);s+=u_bones[int(a_bone_ids.x)]*a_bone_weights.x;s+=u_bones[int(a_bone_ids.y)]*a_bone_weights.y;s+=u_bones[int(a_bone_ids.z)]*a_bone_weights.z;s+=u_bones[int(a_bone_ids.w)]*a_bone_weights.w;p=s*p;}gl_Position=u_light_vp*u_model*p;})GLSL";
 const char* depth_fs=R"GLSL(#version 310 es
 precision highp float;void main(){}
-GLSL";
+)GLSL";
 const char* post_vs=R"GLSL(#version 310 es
 precision highp float;out vec2 v_uv;void main(){const vec2 p[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3));vec2 q=p[gl_VertexID];v_uv=q*0.5+0.5;gl_Position=vec4(q,0,1);}
-GLSL";
+)GLSL";
 const char* bloom_fs=R"GLSL(#version 310 es
-precision highp float;in vec2 v_uv;layout(location=0)out vec4 o_color;uniform sampler2D u_source;uniform float u_threshold;uniform float u_knee;
-void main(){vec3 c=texture(u_source,v_uv).rgb;float l=max(max(c.r,c.g),c.b);float k=max(u_knee,0.0001);float w=clamp((l-u_threshold+k)/(2.0*k),0.0,1.0);w*=w;o_color=vec4(c*w,1.0);}
-GLSL";
+precision highp float;in vec2 v_uv;layout(location=0)out vec4 o_color;uniform sampler2D u_source;uniform float u_threshold;uniform float u_knee;void main(){vec3 c=texture(u_source,v_uv).rgb;float l=max(max(c.r,c.g),c.b);float k=max(u_knee,0.0001);float w=clamp((l-u_threshold+k)/(2.0*k),0.0,1.0);w*=w;o_color=vec4(c*w,1.0);}
+)GLSL";
 const char* tonemap_fs=R"GLSL(#version 310 es
-precision highp float;in vec2 v_uv;layout(location=0)out vec4 o_color;uniform sampler2D u_hdr;uniform sampler2D u_bloom;uniform float u_exposure;uniform float u_bloom_intensity;uniform float u_gamma;uniform float u_white_point;
-vec3 aces(vec3 x){const float a=2.51,b=0.03,c=2.43,d=0.59,e=0.14;return clamp((x*(a*x+b))/(x*(c*x+d)+e),0.0,1.0);}void main(){vec3 hdr=texture(u_hdr,v_uv).rgb*exp2(u_exposure);vec3 bloom=texture(u_bloom,v_uv).rgb*u_bloom_intensity;vec3 mapped=aces(hdr+bloom);mapped=mapped*(1.0+hdr/u_white_point)/(1.0+hdr);mapped=pow(max(mapped,vec3(0)),vec3(1.0/max(u_gamma,0.1)));o_color=vec4(mapped,1.0);}
-GLSL";
+precision highp float;in vec2 v_uv;layout(location=0)out vec4 o_color;uniform sampler2D u_hdr;uniform sampler2D u_bloom;uniform float u_exposure;uniform float u_bloom_intensity;uniform float u_gamma;uniform float u_white_point;vec3 aces(vec3 x){const float a=2.51,b=0.03,c=2.43,d=0.59,e=0.14;return clamp((x*(a*x+b))/(x*(c*x+d)+e),0.0,1.0);}void main(){vec3 hdr=texture(u_hdr,v_uv).rgb*exp2(u_exposure);vec3 bloom=texture(u_bloom,v_uv).rgb*u_bloom_intensity;vec3 mapped=aces(hdr+bloom);mapped=mapped*(1.0+hdr/u_white_point)/(1.0+hdr);mapped=pow(max(mapped,vec3(0)),vec3(1.0/max(u_gamma,0.1)));o_color=vec4(mapped,1.0);}
+)GLSL";
 }
-
-bool OpenGLESApi::advanced_complete() const noexcept{return complete()&&ClearDepthf&&DrawArrays&&GenFramebuffers&&BindFramebuffer&&DeleteFramebuffers&&FramebufferTexture2D&&CheckFramebufferStatus&&GenRenderbuffers&&BindRenderbuffer&&DeleteRenderbuffers&&RenderbufferStorage&&FramebufferRenderbuffer;}
-
-GpuSubmitResult OpenGLESRenderer::submit_advanced(const RenderFrame& frame){
-    GpuSubmitResult result{};if(!frame.valid()){result.error="invalid render frame";return result;}if(!api_.advanced_complete()){result.error="advanced GLES API is incomplete";return result;}
-    std::string error;if(!ensure_programs(error)){result.error=error;return result;}
-    AdvancedRenderPipeline planner;const auto plan=planner.build(frame);Target hdr{},bloom{},shadow{};GlUInt depth_program=0,bloom_program=0,tonemap_program=0,fullscreen_vao=0;
-    auto cleanup=[&](){destroy_target(api_,hdr);destroy_target(api_,bloom);destroy_target(api_,shadow);if(depth_program)api_.DeleteProgram(depth_program);if(bloom_program)api_.DeleteProgram(bloom_program);if(tonemap_program)api_.DeleteProgram(tonemap_program);if(fullscreen_vao)api_.DeleteVertexArrays(1,&fullscreen_vao);api_.BindFramebuffer(GL_FRAMEBUFFER,0);};
-    auto make_program=[&](GlUInt& out,const char* vs,const char* fs)->bool{GlUInt v=0;if(!compile_shader(GL_VERTEX_SHADER,vs,v,error))return false;return link_program(vs,v,fs,out,error);};
-    const int w=std::max(1,int(frame.config.width)),h=std::max(1,int(frame.config.height));api_.GenVertexArrays(1,&fullscreen_vao);
-    if(plan.features.enabled(RenderFeature::Hdr)&&!make_color_target(api_,w,h,hdr,error)){cleanup();result.error=error;return result;}
-    if(plan.features.enabled(RenderFeature::Bloom)&&!make_color_target(api_,std::max(1,w/2),std::max(1,h/2),bloom,error)){cleanup();result.error=error;return result;}
-    if(plan.features.enabled(RenderFeature::Shadows)&&!frame.lights.empty()){
-        if(!make_depth_target(api_,int(plan.shadows.atlas_size),shadow,error)||!make_program(depth_program,depth_vs,depth_fs)){cleanup();result.error=error;return result;}
-        api_.BindFramebuffer(GL_FRAMEBUFFER,shadow.fbo);api_.Viewport(0,0,shadow.width,shadow.height);api_.Enable(GL_DEPTH_TEST);api_.DepthFunc(GL_LESS);api_.ClearDepthf(1.0f);api_.Clear(GL_DEPTH_BUFFER_BIT);api_.UseProgram(depth_program);
-        const auto& cascade=plan.shadows.cascade[0];GlInt lvp=api_.GetUniformLocation(depth_program,"u_light_vp"),model=api_.GetUniformLocation(depth_program,"u_model"),bones=api_.GetUniformLocation(depth_program,"u_bones[0]"),bc=api_.GetUniformLocation(depth_program,"u_bone_count");
-        for(const auto& d:frame.draws){GpuCachedMesh* mesh=nullptr;if(!ensure_mesh(d,frame.frame_id,mesh,error)||!mesh)continue;if(lvp>=0)api_.UniformMatrix4fv(lvp,1,0,cascade.view_projection.m.data());if(model>=0)api_.UniformMatrix4fv(model,1,0,d.model.m.data());int count=d.animated()?int(std::min<std::size_t>(128,d.bone_palette.size())):0;if(bc>=0)api_.Uniform1i(bc,count);if(count>0&&bones>=0)api_.UniformMatrix4fv(bones,count,0,d.bone_palette[0].m.data());api_.BindVertexArray(mesh->vao);api_.DrawElements(GL_TRIANGLES,int(mesh->index_count),GL_UNSIGNED_INT,nullptr);}
-    }
-    if(plan.features.enabled(RenderFeature::Hdr)){api_.BindFramebuffer(GL_FRAMEBUFFER,hdr.fbo);auto base=submit(frame);if(!base.success){cleanup();return base;}result.draw_calls=base.draw_calls;result.triangles=base.triangles;result.animated_draw_calls=base.animated_draw_calls;}else{auto base=submit(frame);cleanup();return base;}
-    if(plan.features.enabled(RenderFeature::Bloom)){
-        if(!make_program(bloom_program,post_vs,bloom_fs)){cleanup();result.error=error;return result;}api_.BindFramebuffer(GL_FRAMEBUFFER,bloom.fbo);api_.Viewport(0,0,bloom.width,bloom.height);api_.Disable(GL_DEPTH_TEST);api_.UseProgram(bloom_program);api_.BindVertexArray(fullscreen_vao);api_.ActiveTexture(GL_TEXTURE0);api_.BindTexture(GL_TEXTURE_2D,hdr.color);api_.Uniform1i(api_.GetUniformLocation(bloom_program,"u_source"),0);api_.Uniform1f(api_.GetUniformLocation(bloom_program,"u_threshold"),plan.bloom.threshold);api_.Uniform1f(api_.GetUniformLocation(bloom_program,"u_knee"),plan.bloom.knee);api_.DrawArrays(GL_TRIANGLES,0,3);
-    }
-    if(!make_program(tonemap_program,post_vs,tonemap_fs)){cleanup();result.error=error;return result;}
-    api_.BindFramebuffer(GL_FRAMEBUFFER,0);api_.Viewport(0,0,w,h);api_.Disable(GL_DEPTH_TEST);api_.Disable(GL_BLEND);api_.UseProgram(tonemap_program);api_.BindVertexArray(fullscreen_vao);api_.ActiveTexture(GL_TEXTURE0);api_.BindTexture(GL_TEXTURE_2D,hdr.color);api_.Uniform1i(api_.GetUniformLocation(tonemap_program,"u_hdr"),0);api_.ActiveTexture(GL_TEXTURE1);api_.BindTexture(GL_TEXTURE_2D,bloom.color?bloom.color:hdr.color);api_.Uniform1i(api_.GetUniformLocation(tonemap_program,"u_bloom"),1);api_.Uniform1f(api_.GetUniformLocation(tonemap_program,"u_exposure"),plan.hdr.exposure_ev);api_.Uniform1f(api_.GetUniformLocation(tonemap_program,"u_bloom_intensity"),plan.bloom.intensity);api_.Uniform1f(api_.GetUniformLocation(tonemap_program,"u_gamma"),plan.hdr.gamma);api_.Uniform1f(api_.GetUniformLocation(tonemap_program,"u_white_point"),plan.hdr.white_point);api_.DrawArrays(GL_TRIANGLES,0,3);cleanup();result.success=true;return result;
-}
-
+bool OpenGLESApi::advanced_complete()const noexcept{return complete()&&ClearDepthf&&DrawArrays&&GenFramebuffers&&BindFramebuffer&&DeleteFramebuffers&&FramebufferTexture2D&&CheckFramebufferStatus&&GenRenderbuffers&&BindRenderbuffer&&DeleteRenderbuffers&&RenderbufferStorage&&FramebufferRenderbuffer;}
+GpuSubmitResult OpenGLESRenderer::submit_advanced(const RenderFrame&frame){GpuSubmitResult result{};if(!frame.valid()){result.error="invalid render frame";return result;}if(!api_.advanced_complete()){result.error="advanced GLES API is incomplete";return result;}std::string error;if(!ensure_programs(error)){result.error=error;return result;}AdvancedRenderPipeline planner;const auto plan=planner.build(frame);Target hdr{},bloom{},shadow{};GlUInt depth_program=0,bloom_program=0,tonemap_program=0,fullscreen_vao=0;auto cleanup=[&](){destroy_target(api_,hdr);destroy_target(api_,bloom);destroy_target(api_,shadow);if(depth_program)api_.DeleteProgram(depth_program);if(bloom_program)api_.DeleteProgram(bloom_program);if(tonemap_program)api_.DeleteProgram(tonemap_program);if(fullscreen_vao)api_.DeleteVertexArrays(1,&fullscreen_vao);api_.BindFramebuffer(GL_FRAMEBUFFER,0);};auto make_program=[&](GlUInt&out,const char*vs,const char*fs)->bool{GlUInt v=0;if(!compile_shader(GL_VERTEX_SHADER,vs,v,error))return false;return link_program(vs,v,fs,out,error);};int w=std::max(1,int(frame.config.width)),h=std::max(1,int(frame.config.height));api_.GenVertexArrays(1,&fullscreen_vao);if(plan.features.enabled(RenderFeature::Hdr)&&!make_color_target(api_,w,h,hdr,error)){cleanup();result.error=error;return result;}if(plan.features.enabled(RenderFeature::Bloom)&&!make_color_target(api_,std::max(1,w/2),std::max(1,h/2),bloom,error)){cleanup();result.error=error;return result;}if(plan.features.enabled(RenderFeature::Shadows)&&!frame.lights.empty()){if(!make_depth_target(api_,int(plan.shadows.atlas_size),shadow,error)||!make_program(depth_program,depth_vs,depth_fs)){cleanup();result.error=error;return result;}api_.BindFramebuffer(GL_FRAMEBUFFER,shadow.fbo);api_.Viewport(0,0,shadow.width,shadow.height);api_.Enable(GL_DEPTH_TEST);api_.DepthFunc(GL_LESS);api_.ClearDepthf(1.0f);api_.Clear(GL_DEPTH_BUFFER_BIT);api_.UseProgram(depth_program);const auto&cascade=plan.shadows.cascade[0];GlInt lvp=api_.GetUniformLocation(depth_program,"u_light_vp"),model=api_.GetUniformLocation(depth_program,"u_model"),bones=api_.GetUniformLocation(depth_program,"u_bones[0]"),bc=api_.GetUniformLocation(depth_program,"u_bone_count");for(const auto&d:frame.draws){GpuCachedMesh*mesh=nullptr;if(!ensure_mesh(d,frame.frame_id,mesh,error)||!mesh)continue;if(lvp>=0)api_.UniformMatrix4fv(lvp,1,0,cascade.view_projection.m.data());if(model>=0)api_.UniformMatrix4fv(model,1,0,d.model.m.data());int count=d.animated()?int(std::min<std::size_t>(128,d.bone_palette.size())):0;if(bc>=0)api_.Uniform1i(bc,count);if(count>0&&bones>=0)api_.UniformMatrix4fv(bones,count,0,d.bone_palette[0].m.data());api_.BindVertexArray(mesh->vao);api_.DrawElements(GL_TRIANGLES,int(mesh->index_count),GL_UNSIGNED_INT,nullptr);}}
+if(plan.features.enabled(RenderFeature::Hdr)){api_.BindFramebuffer(GL_FRAMEBUFFER,hdr.fbo);auto base=submit(frame);if(!base.success){cleanup();return base;}result.draw_calls=base.draw_calls;result.triangles=base.triangles;result.animated_draw_calls=base.animated_draw_calls;}else{auto base=submit(frame);cleanup();return base;}if(plan.features.enabled(RenderFeature::Bloom)){if(!make_program(bloom_program,post_vs,bloom_fs)){cleanup();result.error=error;return result;}api_.BindFramebuffer(GL_FRAMEBUFFER,bloom.fbo);api_.Viewport(0,0,bloom.width,bloom.height);api_.Disable(GL_DEPTH_TEST);api_.UseProgram(bloom_program);api_.BindVertexArray(fullscreen_vao);api_.ActiveTexture(GL_TEXTURE0);api_.BindTexture(GL_TEXTURE_2D,hdr.color);api_.Uniform1i(api_.GetUniformLocation(bloom_program,"u_source"),0);api_.Uniform1f(api_.GetUniformLocation(bloom_program,"u_threshold"),plan.bloom.threshold);api_.Uniform1f(api_.GetUniformLocation(bloom_program,"u_knee"),plan.bloom.knee);api_.DrawArrays(GL_TRIANGLES,0,3);}if(!make_program(tonemap_program,post_vs,tonemap_fs)){cleanup();result.error=error;return result;}api_.BindFramebuffer(GL_FRAMEBUFFER,0);api_.Viewport(0,0,w,h);api_.Disable(GL_DEPTH_TEST);api_.Disable(GL_BLEND);api_.UseProgram(tonemap_program);api_.BindVertexArray(fullscreen_vao);api_.ActiveTexture(GL_TEXTURE0);api_.BindTexture(GL_TEXTURE_2D,hdr.color);api_.Uniform1i(api_.GetUniformLocation(tonemap_program,"u_hdr"),0);api_.ActiveTexture(GL_TEXTURE1);api_.BindTexture(GL_TEXTURE_2D,bloom.color?bloom.color:hdr.color);api_.Uniform1i(api_.GetUniformLocation(tonemap_program,"u_bloom"),1);api_.Uniform1f(api_.GetUniformLocation(tonemap_program,"u_exposure"),plan.hdr.exposure_ev);api_.Uniform1f(api_.GetUniformLocation(tonemap_program,"u_bloom_intensity"),plan.bloom.intensity);api_.Uniform1f(api_.GetUniformLocation(tonemap_program,"u_gamma"),plan.hdr.gamma);api_.Uniform1f(api_.GetUniformLocation(tonemap_program,"u_white_point"),plan.hdr.white_point);api_.DrawArrays(GL_TRIANGLES,0,3);cleanup();result.success=true;return result;}
 } // namespace exgine
