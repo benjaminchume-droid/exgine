@@ -84,7 +84,7 @@ Data-driven `project.exg` manifests define game metadata, startup scenes, assets
 `EnvironmentSystem` provides continuous simulation time, day/year/week counters, configurable Dawn/Morning/Afternoon/Dusk/Evening/Night phases, named seasons with reusable coefficients and a generic weather/intensity channel.
 
 ## Phase 27–53 — High-Fidelity Production Track — IMPLEMENTED FOUNDATION
-Deep production contracts for asset/image processing, asynchronous streaming, navigation, animation state control, weather visuals, audio/UI, persistence, adaptive quality, world streaming, scripting, networking/destruction foundations, and Android shipping configuration are connected in `high_fidelity.hpp/.cpp`.
+Deep production contracts for asset/image processing, asynchronous streaming, navigation, animation state control, weather visuals, audio/UI, persistence, adaptive quality, world streaming, scripting, networking/destruction foundations, and Android shipping configuration are connected in the engine.
 
 ## Phase 54 — Render Feature Graph — IMPLEMENTED
 Explicit dependency ordering for shadows, depth, geometry, lighting, reflections, atmosphere, water, vegetation, VFX, transparency, post-processing and UI.
@@ -112,4 +112,29 @@ Unifies deterministic terrain sampling, biome classification, water presence, ve
 
 **Checkpoint:** identical inputs produce identical region outputs; negative world coordinates map correctly; world queries return terrain/biome/water state; detail selection prioritizes active interest points; multiple regions remain deterministic and independently seeded.
 
-See the source and checkpoint test for the current Phase 61 boundary.
+## Phase 62 — Indirect Lighting and Irradiance — IN PROGRESS
+Add probe-grid irradiance generation and world-space sampling so static/dynamic objects can consume a coherent indirect-lighting signal.
+
+## Phase 63 — Reflection and Refraction Queries — IN PROGRESS
+Add physically bounded reflection-plane tracing and the policy surface for screen-space, planar and future hardware ray-based reflection paths.
+
+## Phase 64 — Volumetric Atmosphere — IN PROGRESS
+Add Beer-Lambert style fog transmittance and the data path required for volumetric atmosphere/cloud consumers.
+
+## Phase 65 — HDR Tone Mapping — IN PROGRESS
+Add an HDR-to-display tone-mapping step with exposure control for the final presentation path.
+
+## Phase 66 — Terrain Material Fusion — IN PROGRESS
+Add slope/height/moisture/snow-aware material blending so terrain visual identity follows world simulation rather than a single texture.
+
+## Phase 67 — Combined-Slip Tire Model — IN PROGRESS
+Add normalized longitudinal/lateral combined tire force evaluation as the bridge from vehicle state into physics.
+
+## Phase 68 — Character Grounding / IK — IN PROGRESS
+Add deterministic ground-foot solving for animation/locomotion integration over uneven terrain.
+
+## Phase 69 — Utility AI and Acoustic Propagation — IN PROGRESS
+Add reusable utility-based action selection and distance/absorption acoustic evaluation for living-world behavior and spatial audio.
+
+## Phase 70 — AAA Acceptance Metrics — IN PROGRESS
+Define the integrated graphics/simulation/audio/runtime acceptance surface. The engine is AAA-ready only when the integrated implementation passes these metrics in an actual running game, not merely because interfaces exist.
