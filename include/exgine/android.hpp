@@ -5,11 +5,14 @@
 #include <cstdint>
 #include <string>
 
+#if defined(__ANDROID__)
+struct ANativeWindow;
+#endif
+
 namespace exgine {
 
 #if defined(__ANDROID__)
-struct ANativeWindow;
-using AndroidNativeWindow = ANativeWindow;
+using AndroidNativeWindow = ::ANativeWindow;
 #else
 using AndroidNativeWindow = void;
 #endif
