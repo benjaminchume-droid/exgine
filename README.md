@@ -77,7 +77,7 @@ A phase is complete only when its checkpoint passes.
 | 7 | Renderer frame pipeline and shader contracts | Implemented |
 | 8 | Interactive buildings | Implemented |
 | 9 | Vehicles and complex objects | Implemented |
-| 10 | Full physics | Planned |
+| 10 | Full physics | Planned / advanced extensions |
 | 11 | Characters, NPCs, items and gameplay | Planned |
 | 12 | Open-world scale and streaming | Planned |
 | 13 | Android/mobile runtime and performance | Planned |
@@ -119,17 +119,19 @@ Phase 7 converts live runtime state into a validated `RenderFrame` containing ca
 
 Phase 8 adds deterministic multi-floor buildings using the shared continuous geometry system. A building owns reproducible rooms, wall partitions, doors, windows, stairs, furniture, interaction points, room queries and collision-volume metadata. Runtime building instances use normal entity IDs, scene nodes and material resources, so generated interiors enter the same renderer path as every other runtime object.
 
-Building dimensions are configuration inputs: room bounds are computed from the configured footprint and wall thickness, then partitioned according to the configured room count. The generator does not use a hidden per-building expansion factor.
+Building dimensions are configuration inputs: room bounds are computed from the configured footprint and wall thickness, then partitioned according to the configured room count. There is no hidden building expansion factor, and the generator preserves the caller's seed value including zero.
 
 ## Current vehicle boundary
 
-Phase 9 adds configuration-driven vehicles and complex object assemblies for cars, SUVs, sports cars, pickups, trucks, buses, motorcycles, construction vehicles, emergency vehicles, boats and aircraft. Length, width, height, wheelbase, track, wheel dimensions, seating and other structural settings feed one deterministic generator. Caller-provided seeds drive reproducible variation without an implicit private seed.
+Phase 9 adds configuration-driven vehicles and complex object assemblies for cars, SUVs, sports cars, pickups, trucks, buses, motorcycles, construction vehicles, emergency vehicles, boats and aircraft. Length, width, height, wheelbase, track, wheel dimensions, seating, cabin proportions and other structural settings feed one deterministic generator. Caller-provided seeds drive reproducible variation without an implicit private seed.
 
 Vehicles are ordinary runtime entities using the shared geometry/material/resource/renderer path. Wheels, doors, seats, lights, collision volumes and physics attachment points are exported as engine data rather than being baked into renderer-only code.
 
 ## Current physics boundary
 
-`include/exgine/physics.hpp` is the solver-facing production contract for real-time 3D rigid-body physics: body modes, collision shapes, materials, contacts, CCD motion quality, constraints, queries, sleeping, fixed-step simulation, determinism and callbacks. The actual broadphase/narrowphase solver, CCD implementation, character controller, vehicle dynamics and buoyancy implementation are intentionally Phase 10 work; EXGINE does not claim a fake physics runtime before that phase.
+`include/exgine/physics.hpp` is the stable 3D physics contract and `src/physics.cpp` now provides a deterministic CPU rigid-body core with fixed-step integration, gravity/forces/torques, broadphase candidate generation, basic contact resolution, constraints, sleeping/waking, contact callbacks and spatial queries. Runtime owns the physics world and advances it from the normal update lifecycle.
+
+The advanced physics roadmap remains broader than this current core: production-grade CCD/TOI, high-fidelity convex and triangle-mesh contact generation, full vehicle tire/drivetrain dynamics, character controllers, buoyancy/hydrodynamics, articulated/soft-body simulation and specialized mobile parallel backends will extend the same contract in Phase 10 rather than bypassing it.
 
 ## Building
 
