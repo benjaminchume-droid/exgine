@@ -12,6 +12,9 @@ precision highp float;layout(location=0)in vec3 a_position;layout(location=1)in 
 const char* mobile_fs=R"GLSL(#version 310 es
 precision highp float;layout(location=0)out vec4 o_color;uniform vec4 u_base_roughness;uniform vec4 u_metal_specular;uniform vec4 u_emission_opacity;uniform vec3 u_camera_position;uniform float u_ambient_intensity;uniform vec3 u_light_direction;uniform vec3 u_light_color;uniform float u_light_intensity;in vec3 v_normal;in vec3 v_world_position;void main(){vec3 n=normalize(v_normal),l=normalize(-u_light_direction);float ndl=max(dot(n,l),0.);vec3 base=u_base_roughness.rgb;float metallic=clamp(u_metal_specular.x,0.,1.);vec3 f0=mix(vec3(.04),base,metallic);vec3 v=normalize(u_camera_position-v_world_position),h=normalize(l+v);float spec=pow(max(dot(n,h),0.),mix(64.,4.,u_base_roughness.a))*mix(.04,1.,metallic);vec3 color=base*(u_ambient_intensity+ndl*u_light_intensity*u_light_color)+f0*spec+u_emission_opacity.rgb;color=color/(color+1.);color=pow(max(color,vec3(0)),vec3(1./2.2));o_color=vec4(color,clamp(u_emission_opacity.a,0.,1.));}
 )GLSL";
+const char* skinned_vs=R"GLSL(#version 310 es
+precision highp float;layout(location=0)in vec3 a_position;layout(location=1)in vec3 a_normal;layout(location=2)in vec2 a_uv;layout(location=3)in vec4 a_bone_ids;layout(location=4)in vec4 a_bone_weights;uniform mat4 u_view_projection;uniform mat4 u_model;uniform mat4 u_bones[128];uniform int u_bone_count;out vec3 v_normal;out vec3 v_world_position;out vec2 v_uv;void main(){vec4 local_p=vec4(a_position,1.);vec3 local_n=a_normal;mat4 skin=mat4(0.);float weight_sum=0.;for(int i=0;i<4;++i){float w=a_bone_weights[i];int id=int(a_bone_ids[i])-1;if(w>0.&&id>=0&&id<u_bone_count){skin+=u_bones[id]*w;weight_sum+=w;}}if(weight_sum<=0.)skin=mat4(1.);else if(weight_sum<1.)skin+=mat4(1.)*(1.-weight_sum);vec4 p=u_model*skin*local_p;v_world_position=p.xyz;v_normal=normalize(mat3(u_model*skin)*local_n);v_uv=a_uv;gl_Position=u_view_projection*p;}
+)GLSL";
 const char* unlit_vs=R"GLSL(#version 310 es
 precision highp float;layout(location=0)in vec3 a_position;layout(location=2)in vec2 a_uv;layout(std140,binding=0)uniform Camera{mat4 u_view_projection;};uniform mat4 u_model;out vec2 v_uv;void main(){v_uv=a_uv;gl_Position=u_view_projection*u_model*vec4(a_position,1.);}
 )GLSL"; const char* unlit_fs=R"GLSL(#version 310 es
@@ -19,7 +22,7 @@ precision highp float;layout(location=0)out vec4 o_color;uniform vec4 u_color;vo
 )GLSL";
 }
 bool ShaderProgram::valid()const noexcept{return !name.empty()&&!vertex_source.empty()&&!fragment_source.empty()&&vertex_source.find("#version 310 es")!=std::string::npos&&fragment_source.find("#version 310 es")!=std::string::npos;}
-ShaderProgram make_pbr_shader(){return {"pbr",pbr_vs,pbr_fs};} ShaderProgram make_unlit_shader(){return {"unlit",unlit_vs,unlit_fs};} ShaderProgram make_mobile_pbr_shader(){return {"mobile_pbr",mobile_vs,mobile_fs};}
+ShaderProgram make_pbr_shader(){return {"pbr",pbr_vs,pbr_fs};} ShaderProgram make_unlit_shader(){return {"unlit",unlit_vs,unlit_fs};} ShaderProgram make_mobile_pbr_shader(){return {"mobile_pbr",mobile_vs,mobile_fs};} ShaderProgram make_mobile_skinned_pbr_shader(){return {"mobile_skinned_pbr",skinned_vs,mobile_fs};}
 ShaderLibrary::ShaderLibrary(){auto p=make_pbr_shader(),u=make_unlit_shader();if(p.valid())programs_.emplace(p.name,std::move(p));if(u.valid())programs_.emplace(u.name,std::move(u));}
 const ShaderProgram* ShaderLibrary::find(std::string_view name)const noexcept{auto it=programs_.find(std::string{name});return it==programs_.end()?nullptr:&it->second;}
 }
