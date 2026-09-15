@@ -2,6 +2,7 @@
 
 #include "exgine/advanced_physics.hpp"
 #include "exgine/frontier.hpp"
+#include "exgine/high_fidelity.hpp"
 #include <cstdint>
 #include <string>
 #include <vector>
