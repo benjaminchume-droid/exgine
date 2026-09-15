@@ -7,7 +7,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(EXGINE_BUILD_DEMO "Build the EXGINE desktop demo" ON)
 option(EXGINE_BUILD_TESTS "Build the EXGINE test suite" ON)
 add_library(exgine_core
-    src/diagnostic.cpp src/ir.cpp src/world.cpp src/open_world.cpp src/performance.cpp src/mobile.cpp src/asset.cpp src/token.cpp src/lexer.cpp
+    src/diagnostic.cpp src/ir.cpp src/world.cpp src/open_world.cpp src/performance.cpp src/mobile.cpp src/asset.cpp src/import.cpp src/asset_runtime.cpp src/token.cpp src/lexer.cpp
     src/parser.cpp src/semantic.cpp src/compiler.cpp src/runtime.cpp src/engine.cpp src/editor.cpp
     src/geometry.cpp src/character.cpp src/material.cpp src/texture.cpp src/resources.cpp
     src/scene.cpp src/lighting.cpp src/render.cpp src/shaders.cpp src/gpu.cpp src/building.cpp
@@ -47,4 +47,6 @@ if(EXGINE_BUILD_TESTS)
   exgine_add_test(exgine_android_phase18_tests tests/android_phase18_tests.cpp)
   exgine_add_test(exgine_mobile_phase19_tests tests/mobile_phase19_tests.cpp)
   exgine_add_test(exgine_asset_phase20_tests tests/asset_phase20_tests.cpp)
+  exgine_add_test(exgine_import_phase21_tests tests/import_phase21_tests.cpp)
+  exgine_add_test(exgine_asset_runtime_phase22_tests tests/asset_runtime_phase22_tests.cpp)
 endif()

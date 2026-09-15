@@ -6,132 +6,76 @@ EXGINE is developed as connected phases. A phase is complete only after its repo
 
 Establish project contracts: C++20 build, public API boundaries, diagnostics, version identity, deterministic core behavior, tests, documentation, and repository structure.
 
-**Checkpoint:** full-tree structural audit + clean build + automated tests.
-
 ## Phase 1 — Language — IMPLEMENTED
-
 Build the source pipeline: `source -> lexer -> parser -> AST -> semantic validation -> IR`.
 
-**Checkpoint:** source programs compile into validated IR and invalid programs fail through diagnostics.
-
 ## Phase 2 — Runtime — IMPLEMENTED
-
 Turn validated IR into live runtime state with entity identity, world state, registry ownership, loading, updating, reset, and one engine lifecycle facade.
 
-**Checkpoint:** complete programs create live entities, advance runtime state, reset cleanly, and failed loads cannot leave stale runtime state.
-
 ## Phase 3 — Geometry Foundation — IMPLEMENTED FOUNDATION
-
-Build continuous 3D geometry APIs and mesh assemblies that every visual object can reuse. The foundation includes primitive meshes, capsules, deterministic procedural character parts, extended node vocabulary, and an initial physics/material architecture that later phases expand.
-
-**Checkpoint:** geometry is generated through reusable public APIs, attached to runtime entities, procedural character generation is deterministic, and the full repository passes CI.
+Build continuous 3D geometry APIs and mesh assemblies that every visual object can reuse.
 
 ## Phase 4 — Materials and Procedural Textures — IMPLEMENTED
-
 Build extensible physically meaningful material definitions, procedural texture generation, noise families, resource caching, and deterministic material generation keys.
 
-**Checkpoint:** one managed material/resource pipeline can describe and supply surface appearance to geometry without a fixed tiny material enum.
-
 ## Phase 5 — World, Terrain, Water and Scenery — IMPLEMENTED
-
 Build deterministic continuous terrain, biomes, water bodies, vegetation, world-space sampling, chunk generation, streaming, unloading and reproducible regeneration foundations.
 
-**Checkpoint:** a seeded scenery world can be generated, streamed, unloaded, regenerated and reproduced through shared world-space sampling.
-
 ## Phase 6 — Scene and Lighting — IMPLEMENTED
-
-Build the runtime scene hierarchy, stable scene IDs, parent/child transforms, cameras, directional/point/spot/area lights, shadow policy, environment lighting, fog, exposure and HDR metadata.
-
-**Checkpoint:** runtime entities connect to one scene graph and renderer-facing lighting/camera state without a graphics API dependency.
+Build the runtime scene hierarchy, stable scene IDs, parent/child transforms, cameras, lighting, shadows, environment lighting and fog metadata.
 
 ## Phase 7 — Renderer and Shaders — IMPLEMENTED
-
-Build the renderer boundary that converts runtime scene/material/light state into validated render frames. Establish matrices, bounds, frustum culling, material bindings, render passes, shader contracts, and platform GPU backend interfaces. Keep GPU API details behind platform modules.
-
-**Checkpoint:** the actual runtime world and its generated geometry/materials produce a validated render frame and are accepted by the deterministic headless renderer; GPU backends consume the same contract rather than a parallel path.
+Build the renderer boundary, render-frame validation, matrices, bounds, frustum culling, material bindings, render passes and shader contracts.
 
 ## Phase 8 — Interactive Buildings — IMPLEMENTED
-
-Generate buildings from reusable geometry and deterministic constraints, including multi-floor room layouts, walls, doors, windows, stairs, furniture, interaction metadata and collision-volume data. Building instances are attached to the normal runtime entity/scene/material/resource pipeline.
-
-**Checkpoint:** generated buildings have reproducible layouts, are represented by real reusable geometry, expose room and interaction queries, and door state changes the active collision set without creating a parallel world representation.
+Generate deterministic multi-floor buildings with rooms, walls, doors, windows, stairs, furniture, interactions and collision metadata.
 
 ## Phase 9 — Vehicles and Complex Objects — IMPLEMENTED
-
-Generate configuration-driven continuous 3D vehicle assemblies for cars, SUVs, sports cars, pickups, trucks, buses, motorcycles, construction vehicles, emergency vehicles, boats and aircraft. Add wheels, interiors, doors, seats, lights, collision volumes, mechanical attachment points and renderable part orientation through the shared engine pipeline.
-
-**Checkpoint:** every supported vehicle family generates as a normal runtime entity using shared geometry/material/resource/render contracts, preserves caller-controlled dimensional configuration, and remains deterministic for an explicit seed.
+Generate configuration-driven continuous 3D vehicles across multiple families using shared geometry/material/resource/render contracts.
 
 ## Phase 10 — Physics — CORE IMPLEMENTED / ADVANCED EXTENSIONS PLANNED
+Deliver the stable physics contract and connected CPU rigid-body core; advanced CCD, vehicle dynamics, buoyancy and articulated systems remain on the extension roadmap.
 
-`include/exgine/physics.hpp` defines the stable production-facing contract. `src/physics.cpp` now provides the connected CPU rigid-body core: fixed-step integration, gravity, force/torque integration, broadphase candidates, basic sphere/box and bounds-based shape collision, sequential-impulse contact response, friction/restitution, basic constraints and motors, sleeping/waking, contact callbacks, and spatial queries.
+## Phase 11 — Characters, NPCs, Items and Gameplay — IMPLEMENTED FOUNDATION
+Character controllers, gameplay state, needs, damage, inventory and NPC scheduling foundations are connected to runtime physics.
 
-The remaining advanced physics scope is intentionally explicit: continuous collision detection and TOI, high-fidelity convex/triangle-mesh narrowphase, full hinge/slider/cone-twist solving, character controllers, vehicle tire/drivetrain dynamics, buoyancy/hydrodynamics, articulated/soft-body systems and mobile parallel acceleration.
+## Phase 12 — Open-World Streaming and Scale — IMPLEMENTED FOUNDATION
+Scalable chunk streaming, budgets, LOD and floating-origin foundations are connected to runtime world state.
 
-**Checkpoint:** the contract and current solver core are integrated into Runtime; future physics work must extend the same handles, descriptors, query/filter semantics and ownership model.
+## Phase 13 — Mobile Runtime and Performance — IMPLEMENTED FOUNDATION
+Device quality tiers, adaptive scale, thermal response and runtime mobile budgets exist in the engine contract.
 
-## Phase 11 — Characters, NPCs, Items and Gameplay
-
-Expand procedural players and NPCs into full characters with body variation, faces, hair, clothing, accessories, animation attachment points, equipment and reusable items. Add gameplay components, interaction, combat and state systems.
-
-**Checkpoint:** players/NPCs can be generated from seeds, equipped from reusable item definitions and remain compatible with animation, physics and rendering.
-
-## Phase 12 — Open-World Streaming and Scale
-
-Extend the Phase 5 streaming foundation into scalable region management, asynchronous generation, persistence, prioritized loading/unloading, visibility-driven budgets, large-world coordinates and runtime world-state continuity.
-
-**Checkpoint:** large worlds stream without changing game logic and without duplicating world/entity representations.
-
-## Phase 13 — Mobile Runtime and Performance
-
-Make Android first-class with lifecycle handling, mobile input, GPU integration, capability detection, frame-time and memory budgets, dynamic resolution, adaptive LOD, batching, profiling and device-tier quality settings.
-
-**Checkpoint:** the same game architecture runs on Android and quality adapts to device capability without changing game logic.
-
-## Phase 14 — Editor and Tooling
-
-Build project tooling, scene/world inspection, asset management, debugging, profiling and authoring workflows on the same engine contracts.
-
-**Checkpoint:** tooling never maintains a parallel representation of the runtime world.
+## Phase 14 — Editor and Tooling — IMPLEMENTED FOUNDATION
+Project model, scene hierarchy editing, assets, undo/redo, serialization and preview are connected to the same runtime contracts.
 
 ## Phase 15 — GPU Backend — IMPLEMENTED
-
-Deliver a real OpenGL ES 3.1 submission backend behind the engine graphics boundary, including runtime shader compilation/linking, GPU buffer/VAO lifecycle, depth testing, back-face culling, alpha blending, opaque/transparent ordering, material uniform binding, error reporting and explicit resource release.
-
-**Checkpoint:** a validated `RenderFrame` can be submitted through the host-provided OpenGL ES API table, the GPU regression suite passes, and existing renderer contracts remain intact.
+Real OpenGL ES 3.1 GPU submission through the renderer boundary.
 
 ## Phase 16 — Animation and Skeletal Runtime — IMPLEMENTED
-
-Add reusable skeletons, hierarchical bones, model-space pose evaluation, quaternion interpolation, keyframe tracks, animation libraries, playback controllers, blending, four-influence skin weights, CPU reference skinning and runtime animation progression.
-
-**Checkpoint:** animated runtime state is deterministic, validates against skeleton contracts, advances through `Runtime::update()`, and can provide a complete evaluated pose to rendering.
+Skeletons, poses, animation tracks, blending, skinning and runtime animation progression.
 
 ## Phase 17 — GPU Skeletal Skinning and Animation Rendering — IMPLEMENTED
-
-Connect evaluated Phase 16 poses to the Phase 15 OpenGL ES backend. Render frames now carry immutable bone palettes with skinned meshes; the GPU path uses a dedicated GLSL ES 3.10 skeletal PBR shader, supports four bone influences per vertex and uploads up to 128 bone matrices per draw. Static rendering continues through the existing mobile PBR program.
-
-**Checkpoint:** a runtime entity can own a validated skeleton and skinned mesh, an animation controller can update its pose, `Renderer::build_frame()` emits a self-contained animated draw with a bone palette, and `OpenGLESRenderer::submit()` performs GPU skinning submission successfully under the regression suite.
+Skinned meshes and bone palettes feed the OpenGL ES renderer through the existing render-frame contract.
 
 ## Phase 18 — Android EGL + Surface + Swapchain + Real Mobile Presentation — IMPLEMENTED
-
-Connect the OpenGL ES renderer to an actual Android `ANativeWindow` through EGL. The Phase 18 presenter creates and owns the EGL display, ES 3.x context and window surface, resolves the Phase 15/17 OpenGL ES procedures against the active context, tracks surface dimensions, handles surface attach/detach/resize lifecycle, synchronizes presentation with `eglSwapInterval(1)`, and presents completed render buffers with `eglSwapBuffers()`.
-
-A native NDK `NativeActivity` sample consumes the same `exgine_core` library and drives the presentation loop without introducing a second rendering stack. Desktop builds retain a deterministic non-Android implementation so the contract remains testable in repository CI.
-
-**Checkpoint:** the repository-wide suite remains green, the Android presentation API owns native-window/EGL lifecycle safely, and the NDK target connects that lifecycle directly to the existing OpenGLES renderer and render-frame contract.
+Android `ANativeWindow` + EGL display/context/surface lifecycle connected to the OpenGL ES renderer and buffer presentation.
 
 ## Phase 19 — Android Mobile Runtime Integration — IMPLEMENTED
+Lifecycle, surface-aware renderability, bounded touch/key input and pause/resume-safe mobile frame pacing.
 
-Turn the Phase 18 presentation loop into a reusable mobile runtime boundary. Add an explicit lifecycle state machine, surface-aware renderability, bounded multi-touch/key input events, Android NDK input translation, pause/resume-aware frame timing and a configurable mobile frame-rate target.
+## Phase 20 — Asset Pipeline and Runtime Packaging — IMPLEMENTED
+Stable content-derived asset IDs, dependency graphs and deterministic versioned XGPK package serialization.
 
-The mobile layer is an adapter over the existing runtime and renderer rather than a parallel engine. Surface loss suspends presentation without destroying game state; input is delivered as engine-native events; frame deltas are bounded to protect simulation after long stalls or app resumes.
+## Phase 21 — Asset Import Framework — IMPLEMENTED
+Concrete authored-content ingestion begins with an importer abstraction and a real OBJ decoder supporting positions, UVs, normals, negative indices, polygon triangulation and generated normals.
 
-**Checkpoint:** the desktop repository suite covers lifecycle/input/frame-pacing semantics, and the Android NativeActivity connects start/resume/pause/stop/destroy, touch/key input, surface lifecycle and frame timing to the same `AndroidEglPresenter` and EXGINE render-frame pipeline established by Phases 15–18.
+**Checkpoint:** authored mesh data becomes the existing `Mesh` contract with deterministic asset identity and without renderer-specific ownership.
 
-## Phase 20 — Asset Pipeline and Runtime Packaging
+## Phase 22 — Runtime Asset Instancing — IMPLEMENTED
+Decoded assets can be cached by stable `AssetId`, looked up by URI and attached to live Runtime entities through the existing `MeshAssembly`/scene/render path. Material-slot overrides are applied at instance time.
 
-Establish the portable asset boundary needed to move authored content into EXGINE without coupling the core to a filesystem, Android storage API, or editor-specific representation. Add deterministic asset identity, typed asset records, dependency graphs, package serialization/deserialization, duplicate rejection, dependency validation, dependency-first load ordering and cycle detection.
+**Checkpoint:** imported geometry is registered once, instantiated on a live entity and remains inside the existing Runtime/SceneGraph/Renderer ownership model.
 
-The package layer remains independent from renderer handles and runtime entities. Resource caches continue to own decoded render-ready objects, while the asset database owns package metadata and bytes. Concrete importers such as glTF/GLB can target this stable contract in the next phase.
+## Next extensions
 
-**Checkpoint:** `exgine_core` builds the package implementation, the repository suite verifies stable IDs, dependency ordering, round trips, malformed packages and cycle rejection, and no parallel resource ownership model is introduced.
+Phase 23 can expand the importer set to glTF/GLB, including textures, materials, skeletons and animations. Phase 24 can add GPU resource residency and asynchronous streaming on top of the stable asset identities and runtime instancing layer.
