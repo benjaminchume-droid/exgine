@@ -18,7 +18,7 @@ struct AssetInstance {
     EntityId entity_id = invalid_entity;
     std::string uri;
     std::shared_ptr<MeshAssembly> geometry;
-    [[nodiscard]] bool valid() const noexcept { return asset_id != invalid_asset && entity_id != invalid_entity && geometry && geometry->valid(); }
+    [[nodiscard]] bool valid() const noexcept { return asset_id != invalid_asset && geometry && geometry->valid(); }
 };
 
 struct AssetRuntimeLoadResult {
