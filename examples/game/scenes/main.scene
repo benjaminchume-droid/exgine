@@ -1,25 +1,27 @@
-world {
-  terrain "WorldTerrain" {
-    amplitude = 80
-    seed = 1337
-  }
-  player "Player" {
-    x = 0
-    y = 2
-    z = 0
-  }
-  building "StarterHouse" {
-    floors = 2
-    rooms_per_floor = 4
-    seed = 1001
-  }
-  vehicle "PlayerCar" {
-    type = Car
-    seed = 2001
-  }
-  npc "Guide" {
-    x = 6
-    y = 1
-    z = 6
+game "EXGINE World Example" {
+  world "World" {
+    terrain "WorldTerrain" {
+      amplitude = 80
+      seed = 1337
+    }
+    player "Player" {
+      x = 0
+      y = 2
+      z = 0
+    }
+    building "StarterHouse" {
+      floors = 2
+      rooms_per_floor = 4
+      seed = 1001
+    }
+    vehicle "PlayerCar" {
+      type = "Car"
+      seed = 2001
+    }
+    npc "Guide" {
+      x = 6
+      y = 1
+      z = 6
+    }
   }
 }
