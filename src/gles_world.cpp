@@ -3,12 +3,11 @@
 
 namespace exgine {
 
-GpuSubmitResult render_world_systems(OpenGLESApi&, const RenderFrame&, const AdvancedRenderPipeline&) {
-    // World rendering is now asset-driven. Terrain, vegetation and water are
-    // submitted as ordinary RenderDrawCall records produced by the scene/asset
-    // streaming layer, so this hook must never synthesize meshes or instances.
-    // Returning success preserves the feature-plan seam while the normal GPU
-    // renderer consumes arbitrary streamed MeshAssembly/SkinnedMesh resources.
+GpuSubmitResult render_world_systems(OpenGLESApi&, const RenderFrame&, const RenderPipelinePlan&) {
+    // The advanced backend no longer creates placeholder terrain/vegetation.
+    // World geometry is authored/streamed into RenderFrame::draws and is
+    // consumed by the normal GPU submission path. This seam remains for
+    // world-specialized passes such as water and future probe capture.
     return GpuSubmitResult{true, 0, 0, 0, {}};
 }
 
