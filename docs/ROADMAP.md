@@ -119,3 +119,11 @@ Connect the OpenGL ES renderer to an actual Android `ANativeWindow` through EGL.
 A native NDK `NativeActivity` sample consumes the same `exgine_core` library and drives the presentation loop without introducing a second rendering stack. Desktop builds retain a deterministic non-Android implementation so the contract remains testable in repository CI.
 
 **Checkpoint:** the repository-wide suite remains green, the Android presentation API owns native-window/EGL lifecycle safely, and the NDK target connects that lifecycle directly to the existing OpenGLES renderer and render-frame contract.
+
+## Phase 19 — Android Mobile Runtime Integration — IMPLEMENTED
+
+Turn the Phase 18 presentation loop into a reusable mobile runtime boundary. Add an explicit lifecycle state machine, surface-aware renderability, bounded multi-touch/key input events, Android NDK input translation, pause/resume-aware frame timing and a configurable mobile frame-rate target.
+
+The mobile layer is an adapter over the existing runtime and renderer rather than a parallel engine. Surface loss suspends presentation without destroying game state; input is delivered as engine-native events; frame deltas are bounded to protect simulation after long stalls or app resumes.
+
+**Checkpoint:** the desktop repository suite covers lifecycle/input/frame-pacing semantics, and the Android NativeActivity connects start/resume/pause/stop/destroy, touch/key input, surface lifecycle and frame timing to the same `AndroidEglPresenter` and EXGINE render-frame pipeline established by Phases 15–18.

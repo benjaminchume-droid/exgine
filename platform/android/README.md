@@ -1,18 +1,8 @@
-# EXGINE Android Presentation
+# EXGINE Android Platform Sample
 
-This directory is the native Android presentation slice for EXGINE Phase 18.
+Phase 18 establishes EGL + `ANativeWindow` presentation. Phase 19 adds the mobile runtime adapter around that presenter.
 
-## Components
-
-`CMakeLists.txt` builds the existing `exgine_core` library plus the Android `NativeActivity` shared library.
-
-`src/main/cpp/native_activity.cpp` receives Android lifecycle commands, attaches/detaches the engine's `AndroidEglPresenter` to the current `ANativeWindow`, responds to surface-size changes, and drives a render/present loop.
-
-`AndroidManifest.xml` declares a native activity and requires OpenGL ES 3.1.
-
-## Native build
-
-Configure with an Android NDK CMake toolchain:
+Build with the Android NDK CMake toolchain:
 
 ```bash
 cmake -S platform/android -B build-android \
@@ -22,20 +12,8 @@ cmake -S platform/android -B build-android \
 cmake --build build-android --parallel
 ```
 
-The target name is `exgine_android`. An Android application packaging layer (Gradle/Android Studio or another APK packager) should include the generated shared library and the supplied manifest.
+The sample application uses the same `exgine_core` target as the engine. Its NativeActivity now handles Android start/resume/pause/stop, window attach/detach/resize, pointer/key input and frame timing through `MobileRuntimeBridge` before presenting through `AndroidEglPresenter`.
 
-## Runtime ownership
+Input is intentionally exposed as engine-native events. A real game/application layer should consume `MobileInputQueue` and map those events to gameplay, UI, camera and controls instead of adding platform-specific state to the renderer.
 
-The NativeActivity never creates a second renderer. It creates an `AndroidEglPresenter`, which creates the EGL display/context/window surface and then supplies a resolved `OpenGLESApi` to the existing Phase 15/17 `OpenGLESRenderer`.
-
-The engine therefore keeps one rendering path:
-
-```text
-Runtime -> Renderer -> RenderFrame -> OpenGLESRenderer
-                                           |
-                                  AndroidEglPresenter
-                                  /      |       \
-                              EGLDisplay Context Surface
-                                           |
-                                      SwapBuffers
-```
+The sample still presents a clear render frame. It is an engine/platform integration target, not a finished game shell or APK packaging project.
