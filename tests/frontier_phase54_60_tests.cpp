@@ -18,7 +18,7 @@ int main(){
 
     EngineProfiler profiler; profiler.begin("render"); profiler.end("render",4.5); profiler.add_counter("draws",37); assert(profiler.sample("render")&&profiler.sample("render")->calls==1&&profiler.counter("draws")==37); assert(profiler.samples().size()==1);
 
-    RollbackBuffer rollback(3); assert(rollback.push(1,{1})&&rollback.push(2,{2})&&rollback.push(3,{3})&&rollback.push(4,{4})); assert(rollback.size()==3&&!rollback.exact(1)); assert(rollback.latest_at_or_before(3)->state[0]==3); assert(rollback.discard_after(2)&&rollback.size()==2);
+    RollbackBuffer rollback(3); assert(rollback.push(1,{1})&&rollback.push(2,{2})&&rollback.push(3,{3})&&rollback.push(4,{4})); assert(rollback.size()==3&&!rollback.exact(1)); assert(rollback.latest_at_or_before(3)->state[0]==3); assert(rollback.discard_after(2)&&rollback.size()==1);
 
     WorldPresentation presentation; presentation.set_sun_elevation(1.0f); const float daylight=presentation.state().exposure; presentation.set_weather_fog(1.0f); assert(presentation.state().contrast<1.0f); presentation.set_auto_exposure(.5f,.1); assert(std::isfinite(presentation.state().exposure)&&std::isfinite(daylight));
 
