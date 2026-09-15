@@ -33,11 +33,37 @@ bool RenderMaterialBinding::valid()const noexcept{return material.valid()&&textu
 bool RenderDrawCall::valid()const noexcept{if(!entity_id||!scene_node||!finite_matrix(model)||!world_bounds.valid()||!material.valid())return false;if(animated())return skinned_mesh&&skinned_payload_valid(*skinned_mesh)&&!bone_palette.empty()&&bone_palette.size()<=128;return geometry&&geometry->valid()&&part_index<geometry->parts.size()&&geometry->parts[part_index].mesh.valid();}
 bool RenderFrame::valid()const noexcept{if(!frame_id||!cfg_ok(config)||!camera.valid()||!finite_matrix(view)||!finite_matrix(projection)||!finite_matrix(view_projection)||lights.size()>config.max_lights)return false;for(const auto&l:lights)if(!l.valid())return false;for(const auto&d:draws)if(!d.valid())return false;return true;}
 Renderer::Renderer(RenderConfig c):config_(c){}
-bool Renderer::build_frame(const Runtime&rt,RenderFrame&f)const{if(!cfg_ok(config_)||!rt.state().world_entity)return false;auto cam=rt.lighting().main_camera();if(!cam.valid()||next_frame_id_==0||next_frame_id_==std::numeric_limits<std::uint64_t>::max())return false;f=RenderFrame{};f.frame_id=next_frame_id_;f.config=config_;f.camera=cam;float aspect=float(config_.width)/float(config_.height);f.view=make_view_matrix(cam);f.projection=make_projection_matrix(cam,aspect);f.view_projection=multiply(f.projection,f.view);f.lighting=rt.lighting().settings();auto ls=rt.lighting().active_lights();if(ls.size()>config_.max_lights)return false;for(auto*p:ls)if(p)f.lights.push_back(*p);auto ids=rt.state().entities.ids();std::sort(ids.begin(),ids.end());for(auto id:ids){auto*e=rt.state().entities.get(id);if(!e||!e->active)continue;auto*sn=rt.scene().get(e->scene_node);if(!sn||!sn->active)return false;auto em=make_model_matrix(sn->world);
-if(e->geometry){for(std::size_t i=0;i<e->geometry->parts.size();++i){const auto&p=e->geometry->parts[i];if(!p.mesh.valid()||p.material_slot.empty())return false;auto res=rt.material_resource(p.material_slot);if(!res||!res->material.valid()||!res->textures||!res->textures->valid())return false;SceneTransform pt{};pt.position=p.position;pt.scale=p.scale;pt.rotation=p.rotation;auto model=multiply(em,make_model_matrix(pt));auto bounds=transform_bounds(mesh_bounds(p.mesh),model);if(!bounds.valid())return false;if(config_.frustum_culling&&!visible(bounds,f.view_projection))continue;RenderDrawCall d;d.entity_id=id;d.scene_node=e->scene_node;d.pass=res->material.opacity<.999f?RenderPass::Transparent:RenderPass::Opaque;d.geometry=e->geometry;d.part_index=i;d.model=model;d.world_bounds=bounds;d.material.material=res->material;d.material.textures=res->textures;if(!d.valid())return false;f.draws.push_back(std::move(d));}}}
-const auto*sm=rt.skinned_mesh(id);const auto*pose=rt.animation_pose(id);const auto*sk=rt.skeleton(id);if(sm||pose||sk){if(!sm||!pose||!sk||!sk->valid()||!pose->valid_for(*sk)||!skinned_payload_valid(*sm))return false;auto material_name=rt.skinned_material(id);auto res=rt.material_resource(material_name);if(!res||!res->material.valid()||!res->textures||!res->textures->valid())return false;if(pose->model.empty()||pose->model.size()>config_.max_bones_per_draw)return false;RenderDrawCall d;d.entity_id=id;d.scene_node=e->scene_node;d.pass=res->material.opacity<.999f?RenderPass::Transparent:RenderPass::Opaque;d.skinned_mesh=std::shared_ptr<const SkinnedMesh>(sm,[](const SkinnedMesh*){});d.model=em;d.world_bounds=transform_bounds(skinned_bounds(*sm),em);d.material.material=res->material;d.material.textures=res->textures;d.bone_palette.reserve(pose->model.size());for(const auto&b:pose->model)d.bone_palette.push_back(anim_matrix(b));if(!d.world_bounds.valid()||!d.valid())return false;f.draws.push_back(std::move(d));}
+bool Renderer::build_frame(const Runtime&rt,RenderFrame&f)const{
+ if(!cfg_ok(config_)||!rt.state().world_entity)return false;
+ auto cam=rt.lighting().main_camera();
+ if(!cam.valid()||next_frame_id_==0||next_frame_id_==std::numeric_limits<std::uint64_t>::max())return false;
+ f=RenderFrame{};f.frame_id=next_frame_id_;f.config=config_;f.camera=cam;float aspect=float(config_.width)/float(config_.height);f.view=make_view_matrix(cam);f.projection=make_projection_matrix(cam,aspect);f.view_projection=multiply(f.projection,f.view);f.lighting=rt.lighting().settings();
+ auto ls=rt.lighting().active_lights();if(ls.size()>config_.max_lights)return false;for(auto*p:ls)if(p)f.lights.push_back(*p);
+ auto ids=rt.state().entities.ids();std::sort(ids.begin(),ids.end());
+ for(auto id:ids){
+  auto*e=rt.state().entities.get(id);if(!e||!e->active)continue;
+  auto*sn=rt.scene().get(e->scene_node);if(!sn||!sn->active)return false;
+  const auto em=make_model_matrix(sn->world);
+  if(e->geometry){
+   for(std::size_t i=0;i<e->geometry->parts.size();++i){
+    const auto&p=e->geometry->parts[i];if(!p.mesh.valid()||p.material_slot.empty())return false;
+    auto res=rt.material_resource(p.material_slot);if(!res||!res->material.valid()||!res->textures||!res->textures->valid())return false;
+    SceneTransform pt{};pt.position=p.position;pt.scale=p.scale;pt.rotation=p.rotation;auto model=multiply(em,make_model_matrix(pt));auto bounds=transform_bounds(mesh_bounds(p.mesh),model);if(!bounds.valid())return false;
+    if(config_.frustum_culling&&!visible(bounds,f.view_projection))continue;
+    RenderDrawCall d;d.entity_id=id;d.scene_node=e->scene_node;d.pass=res->material.opacity<.999f?RenderPass::Transparent:RenderPass::Opaque;d.geometry=e->geometry;d.part_index=i;d.model=model;d.world_bounds=bounds;d.material.material=res->material;d.material.textures=res->textures;if(!d.valid())return false;f.draws.push_back(std::move(d));
+   }
+  }
+  const auto*sm=rt.skinned_mesh(id);const auto*pose=rt.animation_pose(id);const auto*sk=rt.skeleton(id);
+  if(sm||pose||sk){
+   if(!sm||!pose||!sk||!sk->valid()||!pose->valid_for(*sk)||!skinned_payload_valid(*sm))return false;
+   auto material_name=rt.skinned_material(id);auto res=rt.material_resource(material_name);if(!res||!res->material.valid()||!res->textures||!res->textures->valid())return false;
+   if(pose->model.empty()||pose->model.size()>config_.max_bones_per_draw)return false;
+   RenderDrawCall d;d.entity_id=id;d.scene_node=e->scene_node;d.pass=res->material.opacity<.999f?RenderPass::Transparent:RenderPass::Opaque;d.skinned_mesh=std::shared_ptr<const SkinnedMesh>(sm,[](const SkinnedMesh*){});d.model=em;d.world_bounds=transform_bounds(skinned_bounds(*sm),em);d.material.material=res->material;d.material.textures=res->textures;d.bone_palette.reserve(pose->model.size());for(const auto&b:pose->model)d.bone_palette.push_back(anim_matrix(b));
+   if(!d.world_bounds.valid()||!d.valid())return false;f.draws.push_back(std::move(d));
+  }
+ }
+ return f.valid();
 }
-return f.valid();}
 RenderResult Renderer::submit(const RenderFrame&f){RenderResult r;if(!validate(f)){r.error="invalid render frame";return r;}if(f.config.backend!=RenderBackend::Headless){r.error="selected GPU backend has no platform implementation in Phase 7";return r;}r.success=true;r.stats.submitted_draws=r.stats.visible_draws=f.draws.size();for(const auto&d:f.draws)if(d.animated())++r.stats.animated_draws;r.stats.submitted_lights=f.lights.size();++next_frame_id_;return r;}
 bool Renderer::validate(const RenderFrame&f)const noexcept{return f.valid();}
 } // namespace exgine
