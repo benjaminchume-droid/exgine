@@ -93,3 +93,21 @@ Make Android first-class with lifecycle handling, mobile input, GPU integration,
 Build project tooling, scene/world inspection, asset management, debugging, profiling and authoring workflows on the same engine contracts.
 
 **Checkpoint:** tooling never maintains a parallel representation of the runtime world.
+
+## Phase 15 — GPU Backend — IMPLEMENTED
+
+Deliver a real OpenGL ES 3.1 submission backend behind the engine graphics boundary, including runtime shader compilation/linking, GPU buffer/VAO lifecycle, depth testing, back-face culling, alpha blending, opaque/transparent ordering, material uniform binding, error reporting and explicit resource release.
+
+**Checkpoint:** a validated `RenderFrame` can be submitted through the host-provided OpenGL ES API table, the GPU regression suite passes, and existing renderer contracts remain intact.
+
+## Phase 16 — Animation and Skeletal Runtime — IMPLEMENTED
+
+Add reusable skeletons, hierarchical bones, model-space pose evaluation, quaternion interpolation, keyframe tracks, animation libraries, playback controllers, blending, four-influence skin weights, CPU reference skinning and runtime animation progression.
+
+**Checkpoint:** animated runtime state is deterministic, validates against skeleton contracts, advances through `Runtime::update()`, and can provide a complete evaluated pose to rendering.
+
+## Phase 17 — GPU Skeletal Skinning and Animation Rendering — IMPLEMENTED
+
+Connect evaluated Phase 16 poses to the Phase 15 OpenGL ES backend. Render frames now carry immutable bone palettes with skinned meshes; the GPU path uses a dedicated GLSL ES 3.10 skeletal PBR shader, supports four bone influences per vertex and uploads up to 128 bone matrices per draw. Static rendering continues through the existing mobile PBR program.
+
+**Checkpoint:** a runtime entity can own a validated skeleton and skinned mesh, an animation controller can update its pose, `Renderer::build_frame()` emits a self-contained animated draw with a bone palette, and `OpenGLESRenderer::submit()` performs GPU skinning submission successfully under the regression suite.
