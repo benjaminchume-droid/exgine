@@ -16,6 +16,8 @@ add_library(exgine_core
     src/parser.cpp
     src/semantic.cpp
     src/compiler.cpp
+    src/runtime.cpp
+    src/engine.cpp
 )
 
 target_include_directories(exgine_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
