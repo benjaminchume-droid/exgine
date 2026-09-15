@@ -29,6 +29,18 @@ constexpr GlEnum GL_STATIC_DRAW = 0x88E4;
 constexpr GlEnum GL_FLOAT = 0x1406;
 constexpr GlEnum GL_UNSIGNED_INT = 0x1405;
 constexpr GlEnum GL_TRIANGLES = 0x0004;
+constexpr GlEnum GL_TEXTURE_2D = 0x0DE1;
+constexpr GlEnum GL_TEXTURE0 = 0x84C0;
+constexpr GlEnum GL_TEXTURE_MIN_FILTER = 0x2801;
+constexpr GlEnum GL_TEXTURE_MAG_FILTER = 0x2800;
+constexpr GlEnum GL_TEXTURE_WRAP_S = 0x2802;
+constexpr GlEnum GL_TEXTURE_WRAP_T = 0x2803;
+constexpr GlEnum GL_LINEAR = 0x2601;
+constexpr GlEnum GL_LINEAR_MIPMAP_LINEAR = 0x2703;
+constexpr GlEnum GL_REPEAT = 0x2901;
+constexpr GlEnum GL_RGBA8 = 0x8058;
+constexpr GlEnum GL_RGBA = 0x1908;
+constexpr GlEnum GL_UNSIGNED_BYTE = 0x1401;
 
 std::uint64_t hash64(std::uint64_t x) noexcept {
     x ^= x >> 30;
@@ -55,6 +67,12 @@ std::uint64_t mesh_key(const RenderDrawCall& draw) noexcept {
     }
     return key == 0 ? 1 : key;
 }
+
+std::uint64_t texture_key(const std::shared_ptr<const Texture2D>& texture) noexcept {
+    if (!texture) return 0;
+    return hash64(static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(texture.get()))) ^
+           hash64((static_cast<std::uint64_t>(texture->width) << 32) | texture->height);
+}
 } // namespace
 
 bool OpenGLESApi::complete() const noexcept {
@@ -69,6 +87,12 @@ bool OpenGLESApi::complete() const noexcept {
 
 bool OpenGLESRenderer::ready() const noexcept {
     return api_.complete() && program_ != 0 && skinned_program_ != 0;
+}
+
+bool OpenGLESRenderer::texture_ready() const noexcept {
+    return ready() && textured_program_ != 0 && skinned_textured_program_ != 0 &&
+           api_.GenTextures && api_.BindTexture && api_.TexParameteri && api_.TexImage2D &&
+           api_.GenerateMipmap && api_.ActiveTexture && api_.DeleteTextures;
 }
 
 bool OpenGLESRenderer::compile_shader(GlEnum type, const char* source, GlUInt& shader, std::string& error) {
@@ -139,6 +163,8 @@ bool OpenGLESRenderer::ensure_programs(std::string& error) {
 
     const auto mobile = make_mobile_pbr_shader();
     const auto skinned = make_mobile_skinned_pbr_shader();
+    const auto textured = make_mobile_textured_pbr_shader();
+    const auto skinned_textured = make_mobile_skinned_textured_pbr_shader();
 
     GlUInt vertex_shader = 0;
     if (!compile_shader(GL_VERTEX_SHADER, mobile.vertex_source.c_str(), vertex_shader, error)) return false;
@@ -187,6 +213,45 @@ bool OpenGLESRenderer::ensure_programs(std::string& error) {
         error = "OpenGL ES skeletal shader interface mismatch";
         return false;
     }
+
+    if (texture_ready()) return true;
+    if (api_.GenTextures && api_.BindTexture && api_.TexParameteri && api_.TexImage2D &&
+        api_.GenerateMipmap && api_.ActiveTexture && api_.DeleteTextures) {
+        std::string optional_error;
+        GlUInt textured_vertex_shader = 0;
+        if (compile_shader(GL_VERTEX_SHADER, textured.vertex_source.c_str(), textured_vertex_shader, optional_error) &&
+            link_program(textured.vertex_source.c_str(), textured_vertex_shader, textured.fragment_source.c_str(), textured_program_, optional_error)) {
+            GlUInt skinned_textured_vertex_shader = 0;
+            if (compile_shader(GL_VERTEX_SHADER, skinned_textured.vertex_source.c_str(), skinned_textured_vertex_shader, optional_error) &&
+                link_program(skinned_textured.vertex_source.c_str(), skinned_textured_vertex_shader, skinned_textured.fragment_source.c_str(), skinned_textured_program_, optional_error)) {
+                t_base_ = api_.GetUniformLocation(textured_program_, "u_base_texture");
+                t_rough_ = api_.GetUniformLocation(textured_program_, "u_roughness_texture");
+                t_metal_ = api_.GetUniformLocation(textured_program_, "u_metallic_texture");
+                t_normal_ = api_.GetUniformLocation(textured_program_, "u_normal_texture");
+                t_ao_ = api_.GetUniformLocation(textured_program_, "u_ao_texture");
+                t_emission_ = api_.GetUniformLocation(textured_program_, "u_emission_texture");
+                t_opacity_ = api_.GetUniformLocation(textured_program_, "u_opacity_texture");
+                t_use_ = api_.GetUniformLocation(textured_program_, "u_use_textures");
+                st_base_ = api_.GetUniformLocation(skinned_textured_program_, "u_base_texture");
+                st_rough_ = api_.GetUniformLocation(skinned_textured_program_, "u_roughness_texture");
+                st_metal_ = api_.GetUniformLocation(skinned_textured_program_, "u_metallic_texture");
+                st_normal_ = api_.GetUniformLocation(skinned_textured_program_, "u_normal_texture");
+                st_ao_ = api_.GetUniformLocation(skinned_textured_program_, "u_ao_texture");
+                st_emission_ = api_.GetUniformLocation(skinned_textured_program_, "u_emission_texture");
+                st_opacity_ = api_.GetUniformLocation(skinned_textured_program_, "u_opacity_texture");
+                st_use_ = api_.GetUniformLocation(skinned_textured_program_, "u_use_textures");
+                const bool texture_locations_valid = t_base_ >= 0 && t_rough_ >= 0 && t_metal_ >= 0 && t_normal_ >= 0 &&
+                    t_ao_ >= 0 && t_emission_ >= 0 && t_opacity_ >= 0 && t_use_ >= 0 &&
+                    st_base_ >= 0 && st_rough_ >= 0 && st_metal_ >= 0 && st_normal_ >= 0 && st_ao_ >= 0 &&
+                    st_emission_ >= 0 && st_opacity_ >= 0 && st_use_ >= 0;
+                if (!texture_locations_valid) {
+                    if (textured_program_ && api_.DeleteProgram) api_.DeleteProgram(textured_program_);
+                    if (skinned_textured_program_ && api_.DeleteProgram) api_.DeleteProgram(skinned_textured_program_);
+                    textured_program_ = skinned_textured_program_ = 0;
+                }
+            }
+        }
+    }
     return true;
 }
 
@@ -228,10 +293,6 @@ bool OpenGLESRenderer::ensure_mesh(const RenderDrawCall& draw, std::uint64_t fra
                 v.skin.weights[0], v.skin.weights[1], v.skin.weights[2], v.skin.weights[3]
             });
         }
-        if (vertices.empty() || index_count == 0) {
-            error = "empty skinned mesh payload";
-            return false;
-        }
     } else {
         if (!draw.geometry || draw.part_index >= draw.geometry->parts.size()) {
             error = "invalid mesh geometry reference";
@@ -259,7 +320,6 @@ bool OpenGLESRenderer::ensure_mesh(const RenderDrawCall& draw, std::uint64_t fra
     resource.vertex_count = vertex_count;
     resource.animated = animated;
     resource.last_used_frame = frame_id;
-
     api_.GenVertexArrays(1, &resource.vao);
     api_.GenBuffers(1, &resource.vertex_buffer);
     api_.GenBuffers(1, &resource.index_buffer);
@@ -274,8 +334,7 @@ bool OpenGLESRenderer::ensure_mesh(const RenderDrawCall& draw, std::uint64_t fra
     api_.BindVertexArray(resource.vao);
     api_.BindBuffer(GL_ARRAY_BUFFER, resource.vertex_buffer);
     api_.BufferData(GL_ARRAY_BUFFER, static_cast<GlSize>(vertices.size() * sizeof(float)), vertices.data(), GL_STATIC_DRAW);
-    const auto indices = animated ? draw.skinned_mesh->indices
-                                  : draw.geometry->parts[draw.part_index].mesh.indices;
+    const auto indices = animated ? draw.skinned_mesh->indices : draw.geometry->parts[draw.part_index].mesh.indices;
     api_.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, resource.index_buffer);
     api_.BufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GlSize>(indices.size() * sizeof(GlUInt)), indices.data(), GL_STATIC_DRAW);
 
@@ -286,7 +345,6 @@ bool OpenGLESRenderer::ensure_mesh(const RenderDrawCall& draw, std::uint64_t fra
     api_.VertexAttribPointer(1, 3, GL_FLOAT, 0, stride, reinterpret_cast<const void*>(3 * sizeof(float)));
     api_.EnableVertexAttribArray(2);
     api_.VertexAttribPointer(2, 2, GL_FLOAT, 0, stride, reinterpret_cast<const void*>(6 * sizeof(float)));
-
     if (animated) {
         api_.EnableVertexAttribArray(3);
         api_.VertexAttribPointer(3, 4, GL_FLOAT, 0, stride, reinterpret_cast<const void*>(8 * sizeof(float)));
@@ -296,10 +354,73 @@ bool OpenGLESRenderer::ensure_mesh(const RenderDrawCall& draw, std::uint64_t fra
 
     const auto inserted = meshes_.emplace(key, resource);
     if (!inserted.second) {
-        if (resource.vertex_buffer) api_.DeleteBuffers(1, &resource.vertex_buffer);
-        if (resource.index_buffer) api_.DeleteBuffers(1, &resource.index_buffer);
-        if (resource.vao) api_.DeleteVertexArrays(1, &resource.vao);
+        api_.DeleteBuffers(1, &resource.vertex_buffer);
+        api_.DeleteBuffers(1, &resource.index_buffer);
+        api_.DeleteVertexArrays(1, &resource.vao);
         error = "OpenGL ES mesh cache insertion failed";
+        return false;
+    }
+    output = &inserted.first->second;
+    return true;
+}
+
+bool OpenGLESRenderer::ensure_texture(const std::shared_ptr<const Texture2D>& texture, std::uint64_t frame_id,
+                                      GpuCachedTexture*& output, std::string& error) {
+    (void)frame_id;
+    if (!texture_ready() || !texture || !texture->valid()) {
+        error = "OpenGL ES texture residency is unavailable";
+        return false;
+    }
+    const auto key = texture_key(texture);
+    if (auto it = textures_.find(key); it != textures_.end()) {
+        if (!it->second.valid()) {
+            error = "cached OpenGL ES texture is invalid";
+            return false;
+        }
+        output = &it->second;
+        return true;
+    }
+
+    std::vector<std::uint8_t> rgba(static_cast<std::size_t>(texture->width) * texture->height * 4U, 255U);
+    for (std::uint32_t y = 0; y < texture->height; ++y) {
+        for (std::uint32_t x = 0; x < texture->width; ++x) {
+            const auto src = texture->index(x, y, 0);
+            const auto dst = (static_cast<std::size_t>(y) * texture->width + x) * 4U;
+            auto byte = [&](std::uint32_t channel, std::uint8_t fallback) {
+                if (channel >= texture->channels) return fallback;
+                const float v = std::clamp(texture->data[src + channel], 0.0f, 1.0f);
+                return static_cast<std::uint8_t>(v * 255.0f + 0.5f);
+            };
+            rgba[dst] = byte(0, 255);
+            rgba[dst + 1] = byte(1, texture->channels == 1 ? rgba[dst] : 255);
+            rgba[dst + 2] = byte(2, texture->channels == 1 ? rgba[dst] : 255);
+            rgba[dst + 3] = byte(3, 255);
+        }
+    }
+
+    GpuCachedTexture resource;
+    resource.width = texture->width;
+    resource.height = texture->height;
+    resource.source_key = key;
+    api_.GenTextures(1, &resource.handle);
+    if (!resource.handle) {
+        error = "OpenGL ES texture allocation failed";
+        return false;
+    }
+    api_.ActiveTexture(GL_TEXTURE0);
+    api_.BindTexture(GL_TEXTURE_2D, resource.handle);
+    api_.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    api_.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    api_.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    api_.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    api_.TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, static_cast<GlInt>(texture->width), static_cast<GlInt>(texture->height),
+                    0, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
+    api_.GenerateMipmap(GL_TEXTURE_2D);
+
+    const auto inserted = textures_.emplace(key, resource);
+    if (!inserted.second) {
+        api_.DeleteTextures(1, &resource.handle);
+        error = "OpenGL ES texture cache insertion failed";
         return false;
     }
     output = &inserted.first->second;
@@ -316,7 +437,6 @@ GpuSubmitResult OpenGLESRenderer::submit(const RenderFrame& frame) {
         output.error = "render frame backend is not OpenGLES";
         return output;
     }
-
     std::string error;
     if (!ensure_programs(error)) {
         output.error = std::move(error);
@@ -364,9 +484,50 @@ GpuSubmitResult OpenGLESRenderer::submit(const RenderFrame& frame) {
             return output;
         }
         api_.BindVertexArray(mesh->vao);
+        const bool textured = texture_ready() && draw->material.textures && draw->material.textures->valid();
+        GpuCachedTexture* base = nullptr;
+        GpuCachedTexture* rough = nullptr;
+        GpuCachedTexture* metal = nullptr;
+        GpuCachedTexture* normal = nullptr;
+        GpuCachedTexture* ao = nullptr;
+        GpuCachedTexture* emission = nullptr;
+        GpuCachedTexture* opacity = nullptr;
+        if (textured) {
+            const auto& textures = draw->material.textures;
+            if (!ensure_texture(textures->base_color, frame.frame_id, base, error) ||
+                !ensure_texture(textures->roughness, frame.frame_id, rough, error) ||
+                !ensure_texture(textures->metallic, frame.frame_id, metal, error) ||
+                !ensure_texture(textures->normal, frame.frame_id, normal, error) ||
+                !ensure_texture(textures->ambient_occlusion, frame.frame_id, ao, error) ||
+                !ensure_texture(textures->emission, frame.frame_id, emission, error) ||
+                !ensure_texture(textures->opacity, frame.frame_id, opacity, error)) {
+                output.error = std::move(error);
+                return output;
+            }
+        }
+
+        auto bind_textures = [&](bool skinned) {
+            const GlInt base_loc = skinned ? st_base_ : t_base_;
+            const GlInt rough_loc = skinned ? st_rough_ : t_rough_;
+            const GlInt metal_loc = skinned ? st_metal_ : t_metal_;
+            const GlInt normal_loc = skinned ? st_normal_ : t_normal_;
+            const GlInt ao_loc = skinned ? st_ao_ : t_ao_;
+            const GlInt emission_loc = skinned ? st_emission_ : t_emission_;
+            const GlInt opacity_loc = skinned ? st_opacity_ : t_opacity_;
+            const GlInt use_loc = skinned ? st_use_ : t_use_;
+            GpuCachedTexture* maps[] = {base, rough, metal, normal, ao, emission, opacity};
+            const GlInt locations[] = {base_loc, rough_loc, metal_loc, normal_loc, ao_loc, emission_loc, opacity_loc};
+            for (int i = 0; i < 7; ++i) {
+                api_.ActiveTexture(GL_TEXTURE0 + static_cast<GlEnum>(i));
+                api_.BindTexture(GL_TEXTURE_2D, maps[i]->handle);
+                api_.Uniform1i(locations[i], i);
+            }
+            api_.Uniform1f(use_loc, 1.0f);
+        };
 
         if (draw->animated()) {
-            api_.UseProgram(skinned_program_);
+            api_.UseProgram(textured && textured_program_ ? skinned_textured_program_ : skinned_program_);
+            const bool use_textured_program = textured && textured_program_ && skinned_textured_program_;
             api_.UniformMatrix4fv(s_vp_, 1, 0, frame.view_projection.m.data());
             api_.UniformMatrix4fv(s_model_, 1, 0, draw->model.m.data());
             api_.UniformMatrix4fv(s_bones_, static_cast<GlInt>(draw->bone_palette.size()), 0,
@@ -384,8 +545,10 @@ GpuSubmitResult OpenGLESRenderer::submit(const RenderFrame& frame) {
                            std::clamp(material.specular, 0.0f, 1.0f), 0.0f, 0.0f);
             api_.Uniform4f(s_emission_, material.emission.r, material.emission.g, material.emission.b,
                            std::clamp(material.opacity, 0.0f, 1.0f));
+            if (use_textured_program) bind_textures(true);
         } else {
-            api_.UseProgram(program_);
+            api_.UseProgram(textured && textured_program_ ? textured_program_ : program_);
+            const bool use_textured_program = textured && textured_program_;
             api_.UniformMatrix4fv(u_vp_, 1, 0, frame.view_projection.m.data());
             api_.UniformMatrix4fv(u_model_, 1, 0, draw->model.m.data());
             api_.Uniform3f(u_camera_, frame.camera.position.x, frame.camera.position.y, frame.camera.position.z);
@@ -411,6 +574,7 @@ GpuSubmitResult OpenGLESRenderer::submit(const RenderFrame& frame) {
                            std::clamp(material.specular, 0.0f, 1.0f), 0.0f, 0.0f);
             api_.Uniform4f(u_emission_, material.emission.r, material.emission.g, material.emission.b,
                            std::clamp(material.opacity, 0.0f, 1.0f));
+            if (use_textured_program) bind_textures(false);
         }
 
         if (draw->pass == RenderPass::Transparent) {
@@ -441,15 +605,27 @@ void OpenGLESRenderer::release_meshes() noexcept {
     meshes_.clear();
 }
 
+void OpenGLESRenderer::release_textures() noexcept {
+    for (auto& [_, texture] : textures_) {
+        if (texture.handle && api_.DeleteTextures) api_.DeleteTextures(1, &texture.handle);
+    }
+    textures_.clear();
+}
+
 void OpenGLESRenderer::release() noexcept {
     release_meshes();
+    release_textures();
     if (program_ && api_.DeleteProgram) api_.DeleteProgram(program_);
     if (skinned_program_ && api_.DeleteProgram) api_.DeleteProgram(skinned_program_);
-    program_ = skinned_program_ = 0;
+    if (textured_program_ && api_.DeleteProgram) api_.DeleteProgram(textured_program_);
+    if (skinned_textured_program_ && api_.DeleteProgram) api_.DeleteProgram(skinned_textured_program_);
+    program_ = skinned_program_ = textured_program_ = skinned_textured_program_ = 0;
     u_vp_ = u_model_ = u_camera_ = u_ambient_ = u_base_ = u_rough_ = u_metal_ = u_emission_ =
         u_opacity_ = u_light_dir_ = u_light_color_ = u_light_intensity_ = -1;
     s_vp_ = s_model_ = s_camera_ = s_ambient_ = s_base_ = s_metal_ = s_emission_ =
         s_light_dir_ = s_light_color_ = s_light_intensity_ = s_bones_ = s_bone_count_ = -1;
+    t_base_ = t_rough_ = t_metal_ = t_normal_ = t_ao_ = t_emission_ = t_opacity_ = t_use_ = -1;
+    st_base_ = st_rough_ = st_metal_ = st_normal_ = st_ao_ = st_emission_ = st_opacity_ = st_use_ = -1;
 }
 
 } // namespace exgine
