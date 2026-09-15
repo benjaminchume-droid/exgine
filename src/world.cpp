@@ -1,22 +1,27 @@
 #include "exgine/world.hpp"
-
+#include <algorithm>
 #include <cmath>
-
-namespace exgine {
-
-ProceduralWorld::ProceduralWorld(TerrainConfig config) : config_(config) {}
-
-float ProceduralWorld::sample_height(std::int64_t world_x,
-                                     std::int64_t world_z) const noexcept {
-    // Phase 0 deliberately keeps generation dependency-free and deterministic.
-    // The production terrain generator will be introduced in Phase 3 without
-    // changing the public world sampling contract.
-    const double x = static_cast<double>(world_x) * 0.035;
-    const double z = static_cast<double>(world_z) * 0.035;
-    const double seed = static_cast<double>(config_.seed) * 0.001;
-    const double base = std::sin(x + seed) * 0.55 + std::cos(z - seed) * 0.45;
-    const double detail = std::sin((x + z) * 2.7) * 0.10;
-    return static_cast<float>((base + detail) * static_cast<double>(config_.height));
+#include <limits>
+namespace exgine { namespace {
+constexpr float pi=3.14159265358979323846f;
+std::uint64_t mix64(std::uint64_t x) noexcept{x+=0x9e3779b97f4a7c15ULL;x=(x^(x>>30))*0xbf58476d1ce4e5b9ULL;x=(x^(x>>27))*0x94d049bb133111ebULL;return x^(x>>31);}
+std::uint64_t chunk_seed(WorldChunkCoord c,std::uint64_t s) noexcept{return mix64(s^(static_cast<std::uint64_t>(static_cast<std::uint32_t>(c.x))*0x9e3779b97f4a7c15ULL)^(static_cast<std::uint64_t>(static_cast<std::uint32_t>(c.z))*0xc2b2ae3d27d4eb4fULL));}
+float unit(std::uint64_t x) noexcept{return static_cast<float>(mix64(x)>>40)/static_cast<float>(1u<<24);}
+float noise(float x,float z,float scale,std::uint64_t seed) noexcept{NoiseSettings s;s.type=NoiseType::Fbm;s.scale=std::max(scale,1e-6f);s.octaves=5;s.persistence=.5f;s.lacunarity=2.0f;s.seed=seed;return sample_noise(x,z,s)*.5f+.5f;}
+Vec3 norm(Vec3 v) noexcept{const float l=std::sqrt(v.x*v.x+v.y*v.y+v.z*v.z);return l<=1e-6f?Vec3{0,1,0}:Vec3{v.x/l,v.y/l,v.z/l};}
 }
-
+std::size_t WorldChunkCoordHash::operator()(WorldChunkCoord v) const noexcept{return static_cast<std::size_t>(mix64((static_cast<std::uint64_t>(static_cast<std::uint32_t>(v.x))<<32)|static_cast<std::uint32_t>(v.z)));}
+bool WorldChunk::valid() const noexcept{return terrain.valid()&&min_height<=max_height&&std::isfinite(min_height)&&std::isfinite(max_height);}
+ProceduralWorld::ProceduralWorld(TerrainConfig c):config_(c){config_.amplitude=std::max(c.amplitude,0.f);config_.chunk_size=std::max(c.chunk_size,.1f);config_.resolution=std::clamp(c.resolution,2u,512u);config_.base_frequency=std::max(c.base_frequency,1e-6f);config_.detail_frequency=std::max(c.detail_frequency,1e-6f);config_.vegetation_density=std::min(c.vegetation_density,4096u);}
+float ProceduralWorld::sample_height(float x,float z) const noexcept{const float b=noise(x,z,config_.base_frequency,config_.seed);const float d=noise(x,z,config_.detail_frequency,config_.seed^0x517cc1b727220a95ULL);const float c=noise(x*.22f,z*.22f,config_.base_frequency,config_.seed^0x243f6a8885a308d3ULL);const float shaped=(b-.5f)*1.25f+(d-.5f)*.22f+(c-.5f)*.8f;const float m=std::max(0.f,std::abs(b-.5f)*2.f-.45f);return shaped*config_.amplitude+m*m*config_.amplitude*.55f;}
+float ProceduralWorld::sample_height(std::int64_t x,std::int64_t z) const noexcept{return sample_height(static_cast<float>(x),static_cast<float>(z));}
+BiomeSample ProceduralWorld::sample_biome(float x,float z) const noexcept{const float d=1.f,h=sample_height(x,z),hx=sample_height(x+d,z),hz=sample_height(x,z+d);const float slope=std::clamp(std::sqrt((hx-h)*(hx-h)+(hz-h)*(hz-h))/d,0.f,1.f);const float moisture=noise(x,z,.0022f,config_.seed^0x13198a2e03707344ULL);const float latitude=.5f+.5f*std::sin(z*.00018f);const float cool=std::clamp(h/std::max(config_.amplitude,1.f),-1.f,1.f);const float temp=std::clamp(.85f-std::abs(latitude-.5f)*1.45f-cool*.42f,0.f,1.f);Biome b=Biome::Plains;if(h<config_.sea_level-2)b=Biome::Ocean;else if(h<config_.sea_level+3)b=moisture>.62f?Biome::Wetland:Biome::Beach;else if(temp<.18f)b=Biome::Snow;else if(slope>.62f||h>config_.amplitude*.65f)b=Biome::Rocky;else if(moisture>.67f)b=Biome::Forest;else if(moisture<.28f&&temp>.58f)b=Biome::Desert;return {b,moisture,temp,slope};}
+float ProceduralWorld::sample_water_depth(float x,float z) const noexcept{return std::max(0.f,config_.sea_level-sample_height(x,z));}
+WorldChunk ProceduralWorld::generate_chunk(WorldChunkCoord coord) const{WorldChunk out;out.coord=coord;const auto r=config_.resolution,side=r+1;out.terrain.vertices.resize(static_cast<std::size_t>(side)*side);out.terrain.indices.reserve(static_cast<std::size_t>(r)*r*6);const float ox=coord.x*config_.chunk_size,oz=coord.z*config_.chunk_size;out.min_height=std::numeric_limits<float>::infinity();out.max_height=-std::numeric_limits<float>::infinity();auto idx=[side](std::uint32_t x,std::uint32_t z){return static_cast<std::size_t>(z)*side+x;};for(std::uint32_t z=0;z<=r;++z)for(std::uint32_t x=0;x<=r;++x){const float u=float(x)/r,v=float(z)/r,wx=ox+u*config_.chunk_size,wz=oz+v*config_.chunk_size,y=sample_height(wx,wz),e=config_.chunk_size/r;const float dx=sample_height(wx+e,wz)-sample_height(wx-e,wz),dz=sample_height(wx,wz+e)-sample_height(wx,wz-e);out.terrain.vertices[idx(x,z)]={{wx,y,wz},norm({-dx,2*e,-dz}),{u,v}};out.min_height=std::min(out.min_height,y);out.max_height=std::max(out.max_height,y);}for(std::uint32_t z=0;z<r;++z)for(std::uint32_t x=0;x<r;++x){auto a=(std::uint32_t)idx(x,z),b=(std::uint32_t)idx(x+1,z),c=(std::uint32_t)idx(x,z+1),d=(std::uint32_t)idx(x+1,z+1);out.terrain.indices.insert(out.terrain.indices.end(),{a,c,b,b,c,d});}
+const auto seed=chunk_seed(coord,config_.seed);bool water=false;for(std::uint32_t z=0;z<=r;++z)for(std::uint32_t x=0;x<=r;++x){const float u=float(x)/r,v=float(z)/r,wx=ox+u*config_.chunk_size,wz=oz+v*config_.chunk_size;if(sample_water_depth(wx,wz)>0)water=true;out.water.vertices.push_back({{wx,config_.sea_level,wz},{0,1,0},{u,v}});}if(water){out.water.indices.reserve(static_cast<std::size_t>(r)*r*6);for(std::uint32_t z=0;z<r;++z)for(std::uint32_t x=0;x<r;++x){auto a=(std::uint32_t)idx(x,z),b=(std::uint32_t)idx(x+1,z),c=(std::uint32_t)idx(x,z+1),d=(std::uint32_t)idx(x+1,z+1);out.water.indices.insert(out.water.indices.end(),{a,b,c,b,d,c});}out.water_bodies.push_back({WaterBodyType::Ocean,seed,config_.sea_level,std::max(0.f,config_.sea_level-out.min_height),{0,0,0}});}else out.water.vertices.clear();
+out.vegetation.reserve(config_.vegetation_density);for(std::uint32_t i=0;i<config_.vegetation_density;++i){const auto a= mix64(seed+i*0x9e3779b97f4a7c15ULL),b=mix64(a^0x94d049bb133111ebULL);const float wx=ox+unit(a)*config_.chunk_size,wz=oz+unit(b)*config_.chunk_size,y=sample_height(wx,wz);const auto bs=sample_biome(wx,wz);if(bs.biome==Biome::Ocean||bs.biome==Biome::Beach||bs.biome==Biome::Rocky||y<config_.sea_level+.25f)continue;const float gate=unit(mix64(b^static_cast<std::uint64_t>(bs.biome)));if(gate>(bs.biome==Biome::Forest?.88f:.44f))continue;out.vegetation.push_back({mix64(a),bs.biome,{wx,y,wz},.7f+unit(a^17)*.8f,unit(b^31)*2*pi,static_cast<std::uint8_t>(mix64(a^53)&3u)});}return out;}
+WorldStreamer::WorldStreamer(const ProceduralWorld& w):world_(&w){}
+void WorldStreamer::update(Vec3 focus,std::uint32_t radius){if(!world_)return;const float s=world_->config().chunk_size;const auto cx=(std::int32_t)std::floor(focus.x/s),cz=(std::int32_t)std::floor(focus.z/s);const std::int32_t r=(std::int32_t)std::min(radius,64u);for(std::int32_t z=cz-r;z<=cz+r;++z)for(std::int32_t x=cx-r;x<=cx+r;++x){const auto dx=x-cx,dz=z-cz;if(dx*dx+dz*dz>r*r)continue;WorldChunkCoord c{x,z};if(chunks_.find(c)==chunks_.end())chunks_.emplace(c,world_->generate_chunk(c));}for(auto it=chunks_.begin();it!=chunks_.end();){const auto dx=it->first.x-cx,dz=it->first.z-cz;if(dx*dx+dz*dz>r*r)it=chunks_.erase(it);else++it;}}
+void WorldStreamer::clear() noexcept{chunks_.clear();}
+const WorldChunk* WorldStreamer::find(WorldChunkCoord c) const noexcept{const auto it=chunks_.find(c);return it==chunks_.end()?nullptr:&it->second;}
 } // namespace exgine
