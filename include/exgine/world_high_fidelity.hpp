@@ -1,6 +1,5 @@
 #pragma once
 
-#include "exgine/high_fidelity.hpp"
 #include "exgine/world.hpp"
 #include <cstdint>
 #include <vector>
@@ -9,33 +8,11 @@ namespace exgine {
 
 enum class WorldLayerKind : std::uint8_t { Terrain, Water, Vegetation, Road, Settlement, Landmark };
 enum class WorldDetailLevel : std::uint8_t { Far=0, Mid=1, Near=2, Hero=3 };
-
 struct WorldInterestPoint { Vec3 position{}; float radius=256.0f; float priority=1.0f; };
-struct WorldChunkDetail {
-    WorldChunkCoord coord{};
-    WorldDetailLevel detail=WorldDetailLevel::Far;
-    bool terrain=false,water=false,vegetation=false,structures=false,roads=false;
-};
-struct WorldRegion {
-    WorldChunkCoord coord{};
-    Vec3 origin{};
-    float size=256.0f;
-    std::uint64_t seed=0;
-    float terrain_min=0.0f,terrain_max=0.0f;
-    std::uint32_t water_count=0,vegetation_count=0,structure_count=0,road_count=0;
-    std::vector<WorldInterestPoint> interests;
-    [[nodiscard]] bool valid() const noexcept { return size>0.0f && seed!=0; }
-};
-struct WorldBuildConfig {
-    float chunk_size=256.0f;
-    std::uint32_t samples_per_axis=33;
-    std::uint32_t vegetation_instances=512;
-    std::uint32_t structure_budget=16;
-    std::uint32_t road_budget=8;
-    float water_level=0.0f;
-    std::uint64_t seed=1;
-    TerrainHighDetailConfig terrain{};
-};
+struct WorldChunkDetail { WorldChunkCoord coord{}; WorldDetailLevel detail=WorldDetailLevel::Far; bool terrain=false,water=false,vegetation=false,structures=false,roads=false; };
+struct WorldRegion { WorldChunkCoord coord{}; Vec3 origin{}; float size=256.0f; std::uint64_t seed=0; float terrain_min=0.0f,terrain_max=0.0f; std::uint32_t water_count=0,vegetation_count=0,structure_count=0,road_count=0; std::vector<WorldInterestPoint> interests; [[nodiscard]] bool valid() const noexcept { return size>0.0f && seed!=0; } };
+struct WorldTerrainDetailConfig { std::uint32_t chunk_resolution=129; float world_scale=1.0f; float erosion_strength=0.35f; float thermal_strength=0.15f; float slope_blend=1.0f; float snow_line=1600.0f; float rock_line=900.0f; };
+struct WorldBuildConfig { float chunk_size=256.0f; std::uint32_t samples_per_axis=33; std::uint32_t vegetation_instances=512; std::uint32_t structure_budget=16; std::uint32_t road_budget=8; float water_level=0.0f; std::uint64_t seed=1; WorldTerrainDetailConfig terrain{}; };
 struct WorldQueryResult { bool valid=false; float height=0.0f; BiomeSample biome{}; bool water=false; float water_depth=0.0f; };
 
 class HighFidelityWorld {
