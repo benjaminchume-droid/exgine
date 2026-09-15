@@ -10,7 +10,7 @@ add_library(exgine_core
     src/diagnostic.cpp src/ir.cpp src/world.cpp src/open_world.cpp src/performance.cpp src/mobile.cpp src/asset.cpp src/import.cpp src/gltf.cpp src/asset_runtime.cpp src/gpu_residency.cpp
     src/token.cpp src/lexer.cpp src/parser.cpp src/semantic.cpp src/compiler.cpp src/runtime.cpp src/engine.cpp src/editor.cpp
     src/geometry.cpp src/character.cpp src/material.cpp src/texture.cpp src/resources.cpp src/scene.cpp src/lighting.cpp src/render.cpp src/shaders.cpp src/gpu.cpp
-    src/building.cpp src/vehicle.cpp src/physics.cpp src/gameplay.cpp src/animation.cpp src/android.cpp src/environment.cpp src/game.cpp src/production_runtime.cpp)
+    src/building.cpp src/vehicle.cpp src/vehicle_dynamics.cpp src/physics.cpp src/gameplay.cpp src/animation.cpp src/android.cpp src/environment.cpp src/game.cpp src/production_runtime.cpp)
 target_include_directories(exgine_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(exgine_core PUBLIC cxx_std_20)
 target_compile_options(exgine_core PRIVATE
@@ -53,4 +53,5 @@ if(EXGINE_BUILD_TESTS)
   exgine_add_test(exgine_environment_phase26_tests tests/environment_phase26_tests.cpp)
   exgine_add_test(exgine_game_phase25_tests tests/game_phase25_tests.cpp)
   exgine_add_test(exgine_production_phase27_36_tests tests/production_phase27_36_tests.cpp)
+  exgine_add_test(exgine_vehicle_dynamics_phase27_tests tests/vehicle_dynamics_phase27_tests.cpp)
 endif()
