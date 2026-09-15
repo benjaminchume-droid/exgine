@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <string>
+#include <vector>
 
 using namespace exgine;
 
@@ -16,8 +17,8 @@ void test_import_and_registry() {
     assert(result.meshes.size() == 1);
     assert(result.meshes[0].valid());
     assert(result.meshes[0].mesh.indices.size() == 6);
-    assert(result.meshes[0].asset_id == make_asset_id("models/test.obj",
-        std::vector<std::uint8_t>(cube_obj(), cube_obj() + std::char_traits<char>::length(cube_obj()))));
+    const std::vector<std::uint8_t> bytes(cube_obj(), cube_obj() + std::char_traits<char>::length(cube_obj()));
+    assert(result.meshes[0].asset_id == make_asset_id("models/test.obj", bytes));
 }
 
 void test_rejections() {
@@ -28,11 +29,14 @@ void test_rejections() {
 
 void test_runtime_attachment() {
     IR ir;
-    ir.root.add_child(NodeKind::Prop, "ImportedProp");
+    ir.root.children.push_back(Node{NodeKind::Prop, "ImportedProp", {}, {}});
     Runtime runtime;
     assert(runtime.load(ir));
     EntityId entity = invalid_entity;
-    for (const auto id : runtime.state().entities.ids()) if (runtime.state().entities.get(id)->kind == NodeKind::Prop) entity = id;
+    for (const auto id : runtime.state().entities.ids()) {
+        const auto* e = runtime.state().entities.get(id);
+        if (e && e->kind == NodeKind::Prop) entity = id;
+    }
     assert(entity != invalid_entity);
 
     AssetRuntime assets;
