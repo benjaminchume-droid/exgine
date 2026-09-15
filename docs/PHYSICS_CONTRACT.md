@@ -1,43 +1,41 @@
 # EXGINE Physics Contract
 
-`include/exgine/physics.hpp` is the stable public contract for the EXGINE physics subsystem. It is deliberately separate from the Phase 9 vehicle generator so generated objects can expose physically meaningful attachment points without inventing a fake solver.
+`include/exgine/physics.hpp` is the public contract for EXGINE's three-dimensional physics subsystem. It is deliberately independent from render geometry ownership: collision shapes can be specialized while still using the same world/entity coordinate system.
 
 ## Simulation model
 
-The contract is designed for real-time three-dimensional rigid-body simulation with a fixed-step accumulator. The default contract targets a 120 Hz fixed step, bounded substeps, iterative velocity/position solving, sleeping and deterministic mode.
+The contract targets real-time rigid-body simulation with a fixed-step accumulator. The default is a 120 Hz fixed step with bounded catch-up substeps, iterative velocity/position solving, sleeping, interpolation state and an explicit deterministic mode.
 
 ## Bodies
 
-Bodies support `Static`, `Dynamic` and `Kinematic` modes. A body description carries world transform, linear/angular velocity, anisotropic damping, gravity scaling, mass properties, motion quality, sleep/gravity/CCD flags and speed limits.
+Bodies support `Static`, `Dynamic` and `Kinematic`. Descriptions carry transform, linear/angular velocity, anisotropic damping, gravity scaling, mass properties, motion quality, sleep/gravity/CCD flags and velocity limits. Runtime owns the physics world; callers retain stable body handles rather than owning solver internals.
 
 ## Shapes
 
-The shape contract covers sphere, box, capsule, cylinder, convex hull, triangle mesh, height field and compound shapes. Shapes are independent from rendered mesh ownership and can therefore use specialized collision representations while sharing the same world/entity coordinates.
+Supported representations are sphere, box, capsule, cylinder, convex hull, triangle mesh, height field and compound shapes. Render meshes and collision shapes are separate contracts so mobile/runtime optimization can select an appropriate collision representation without changing visual assets.
 
 ## Materials and contacts
 
-Physics materials expose density, static/dynamic friction, rolling/spinning friction and restitution. Contact manifolds expose body/collider identity, up to four contact points, normals, penetration and accumulated normal/tangent impulses. Contact events distinguish begin, persist and end transitions.
-
-## CCD and TOI
-
-Motion quality explicitly distinguishes discrete, linear-cast, continuous and continuous+angular modes. The world settings reserve dedicated time-of-impact solver iterations so high-speed bodies do not depend on frame rate for tunnelling behavior.
+Physics materials expose density, static/dynamic friction, rolling/spinning friction and restitution. Contact manifolds expose body/collider identity, up to four points, normals, penetration and accumulated impulses. Contact callbacks report begin/persist/end transitions, while sensors generate events without solver response.
 
 ## Constraints
 
-The contract supports fixed, ball-socket, hinge, slider, distance, spring, cone-twist and six-degree-of-freedom constraints. Linear and angular limits, motors and break force/torque are first-class data.
+The public contract supports fixed, ball-socket, hinge, slider, distance, spring, cone-twist and six-degree-of-freedom constraint descriptions, including linear/angular limits, motors and break thresholds.
 
 ## Queries
 
-Raycasts, shape casts and overlap queries share a common layer/mask filter with body/collider exclusion and sensor policy. Results contain stable body/collider IDs, fraction/distance, hit position and normal.
+Raycasts, shape casts and overlap queries use one layer/mask filter model with body/collider exclusions and sensor policy. Results contain stable handles, normalized fraction/distance, world hit position and hit normal.
 
-## Runtime integration boundary
+## Runtime implementation boundary
 
-Physics bodies and colliders are intended to bind to ordinary EXGINE runtime entities. Buildings expose collision volumes; vehicles expose wheel/axle/center-of-mass attachment points. The full implementation in Phase 10 will consume these existing representations instead of creating parallel object systems.
+The repository now contains a deterministic CPU rigid-body runtime behind this contract. It includes fixed-step integration, gravity/force/torque application, sleeping/waking, broadphase candidate generation, basic shape narrowphase, sequential impulse contacts, friction/restitution, constraint processing, callbacks and spatial queries. `Runtime::load()` owns one physics world and `Runtime::update()` advances it through the same engine lifecycle.
+
+This is a production-oriented core, not a claim that every advanced physical phenomenon already exists. Continuous collision detection/TOI behavior, high-fidelity convex/mesh contact generation, full vehicle tire/drivetrain dynamics, character controllers, buoyancy/hydrodynamics, articulated soft-body systems and specialized mobile parallel backends remain future physics work and must extend this contract without bypassing it.
 
 ## Determinism and threading
 
-Deterministic mode is explicit. Parallel broadphase is a performance option and must not change externally visible simulation results when deterministic mode is enabled. Callback delivery is part of the contract but application-owned behavior remains outside the physics core.
+Determinism is explicit. IDs and contact processing order are stable, and the public contract forbids pointer/time-based simulation identity. Parallel broadphase is a policy option; deterministic mode must remain externally reproducible. Callbacks are application-owned and are invoked by the simulation owner.
 
-## Phase boundary
+## Integration with generated objects
 
-Phase 9 establishes this solver-facing contract and physically useful vehicle/building metadata. Phase 10 is the implementation phase for broadphase/narrowphase collision, constraint solving, CCD, character controllers, vehicle dynamics, triggers, sleeping, buoyancy and deterministic simulation.
+Buildings provide collision-volume metadata; vehicles provide wheel, axle and center-of-mass attachment points. The physics layer consumes these representations through physics shapes/bodies instead of maintaining a second building or vehicle world.
