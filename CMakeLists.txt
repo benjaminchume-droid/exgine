@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_library(exgine_core
-    src/diagnostic.cpp src/ir.cpp src/world.cpp src/open_world.cpp src/token.cpp src/lexer.cpp
+    src/diagnostic.cpp src/ir.cpp src/world.cpp src/open_world.cpp src/performance.cpp src/token.cpp src/lexer.cpp
     src/parser.cpp src/semantic.cpp src/compiler.cpp src/runtime.cpp src/engine.cpp
     src/geometry.cpp src/character.cpp src/material.cpp src/texture.cpp src/resources.cpp
     src/scene.cpp src/lighting.cpp src/render.cpp src/shaders.cpp src/building.cpp
@@ -38,3 +38,7 @@ add_executable(exgine_open_world_phase12_tests tests/open_world_phase12_tests.cp
 target_link_libraries(exgine_open_world_phase12_tests PRIVATE exgine_core)
 target_compile_options(exgine_open_world_phase12_tests PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-UNDEBUG> $<$<CXX_COMPILER_ID:MSVC>:/UNDEBUG>)
 add_test(NAME exgine_open_world_phase12_tests COMMAND exgine_open_world_phase12_tests)
+add_executable(exgine_performance_phase13_tests tests/performance_phase13_tests.cpp)
+target_link_libraries(exgine_performance_phase13_tests PRIVATE exgine_core)
+target_compile_options(exgine_performance_phase13_tests PRIVATE $<$<CXX_COMPILER_ID:GNU,Clang>:-UNDEBUG> $<$<CXX_COMPILER_ID:MSVC>:/UNDEBUG>)
+add_test(NAME exgine_performance_phase13_tests COMMAND exgine_performance_phase13_tests)
