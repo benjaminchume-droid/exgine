@@ -20,20 +20,24 @@ This document defines the architectural contracts that keep EXGINE connected as 
                   Optimization
                        |
                  Runtime systems
-              /        |        \
-           World     Entities    Resources
-                       |
-                   Buildings
-                       |
-                    Scene
-                 /        \
-            Lighting    Camera
-                 \        /
-                  Render API
-                 /          \
-          RenderFrame      Shaders
-                 |            |
-                 +-------> Platform/GPU backend
+          /          |          |          \
+       World      Entities   Resources   Physics
+                      |                     |
+                 Buildings             Simulation
+                      |                     |
+                  Vehicles                |
+                      \                    /
+                       \                 Queries
+                        \                 /
+                         Scene -----------
+                       /      \
+                 Lighting    Camera
+                       \      /
+                       Render API
+                    /           \
+             RenderFrame       Shaders
+                    |             |
+                    +-------> Platform/GPU backend
 ```
 
 ## Dependency direction
@@ -46,8 +50,10 @@ Dependencies flow downward toward lower-level services. A lower-level subsystem 
 - World systems generate and stream world state.
 - Entity systems own stable runtime identities.
 - Building generation consumes configuration and existing geometry/material APIs to create building instances keyed by existing `EntityId` values.
+- Vehicle generation consumes explicit vehicle configuration and existing geometry/material APIs to create vehicle instances keyed by existing `EntityId` values.
 - Scene graph owns runtime spatial hierarchy through stable node IDs.
 - Lighting/camera systems describe renderer-facing scene state without depending on a graphics API.
+- Physics owns simulation state through stable physics handles and consumes entity/world coordinates; it does not own render geometry.
 - Renderer snapshots runtime state into validated `RenderFrame` data and does not define gameplay rules.
 - Shader programs define the binding/source contract consumed by platform shader compilers.
 - Platform backends own GPU resources, command submission, presentation, and API-specific synchronization.
@@ -63,6 +69,10 @@ Ownership must be explicit. Prefer value semantics for small immutable descripti
 
 Building instances are owned by `Runtime` and keyed by their existing entity IDs. Their generated geometry is shared with the normal entity render path; room/opening/interactable/collision metadata has one authoritative building representation.
 
+Vehicle instances are owned by `Runtime` and keyed by their existing entity IDs. Their generated geometry, wheel/door/seat/light data, collision volumes and physics attachment metadata are one authoritative vehicle representation.
+
+The physics solver contract uses physics body/collider/constraint IDs instead of owning entities or render resources. The future implementation may associate those handles with runtime entity IDs while keeping simulation and rendering concerns separated.
+
 Render frames own value snapshots of camera/light/material parameters and shared references to immutable texture resources. This keeps a submitted frame valid even when the caller releases its transient local references.
 
 ## Determinism
@@ -70,6 +80,10 @@ Render frames own value snapshots of camera/light/material parameters and shared
 Procedural systems must be deterministic when given the same explicit seed and configuration. Platform-specific rendering may differ visually, but world generation and gameplay logic should not silently depend on frame timing or undefined platform state. Render-frame entity ordering is explicitly sorted by stable entity ID.
 
 Building room IDs, opening placement, furniture placement, stairs and collision metadata derive from the explicit building seed/configuration and do not use runtime time or pointer identity.
+
+Vehicle IDs, procedural variation, wheel/door/seat/light placement and attachment IDs derive from the explicit vehicle seed/configuration and do not use runtime time, pointer identity or `std::hash`. A zero seed is valid input; generators do not silently replace it with an internal seed.
+
+Deterministic physics mode is an explicit solver setting. Parallel execution must not become an observable source of simulation divergence when deterministic mode is enabled.
 
 ## Threading
 
@@ -81,9 +95,13 @@ Expected user/content errors should be represented through structured diagnostic
 
 Building generation fails cleanly when the target entity is not a building, the runtime is not loaded, required material resources are missing, or the generated definition is invalid.
 
+Vehicle generation fails cleanly when the target entity is not a vehicle, the runtime is not loaded, required material resources are missing, or the generated definition is invalid.
+
+Physics APIs are intended to reject invalid descriptors/handles without corrupting world state. The implementation phase must preserve stable IDs, bounded stepping and explicit query/filter semantics.
+
 ## Platform separation
 
-Android, desktop, Vulkan, OpenGL ES, audio backends, and input devices must be isolated behind platform/backend interfaces. Core world, IR, parser, gameplay, scene, lighting, building generation, render-frame construction, and shader source contracts should remain portable.
+Android, desktop, Vulkan, OpenGL ES, audio backends, and input devices must be isolated behind platform/backend interfaces. Core world, IR, parser, gameplay, scene, lighting, building generation, vehicle generation, physics contract, render-frame construction, and shader source contracts should remain portable.
 
 ## Phase rule
 
