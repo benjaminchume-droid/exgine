@@ -14,15 +14,15 @@ Build the real EXGINE source pipeline:
 
 `source -> lexer -> parser -> AST -> semantic validation -> IR`
 
-The language now supports nested blocks, properties, typed scalar values, comments, string escapes, source locations, parser recovery, semantic validation, and a single public compiler entry point.
+The language supports nested blocks, properties, typed scalar values, comments, string escapes, source locations, parser recovery, semantic validation, and a single public compiler entry point.
 
-**Checkpoint:** implemented end-to-end tests compile complete sample programs into validated IR and reject malformed/invalid programs through diagnostics. External CI status must still be green-verified before the checkpoint is formally signed off.
+**Checkpoint:** source programs compile into validated IR and invalid programs fail through diagnostics. External CI status must be green-verified before formal sign-off.
 
-## Phase 2 — Runtime
+## Phase 2 — Runtime — IMPLEMENTED
 
-Turn validated IR into live runtime state. Establish world, entity, component, resource, scene, update, and lifecycle contracts.
+Turn validated IR into live runtime state. Establish entity identity, world state, registry ownership, loading, updating, reset, and the unified engine lifecycle facade.
 
-**Checkpoint:** a complete EXGINE program creates and updates runtime state through one connected path.
+**Checkpoint:** a complete EXGINE program creates live entities, advances runtime state, resets cleanly, and failed loads cannot leave stale runtime state. External CI status must be green-verified before formal sign-off.
 
 ## Phase 3 — Procedural World
 
