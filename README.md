@@ -76,7 +76,7 @@ A phase is complete only when its checkpoint passes.
 | 6 | Scene graph, lighting and camera state | Implemented |
 | 7 | Renderer frame pipeline and shader contracts | Implemented |
 | 8 | Interactive buildings | Implemented |
-| 9 | Vehicles and complex objects | Planned |
+| 9 | Vehicles and complex objects | Implemented |
 | 10 | Full physics | Planned |
 | 11 | Characters, NPCs, items and gameplay | Planned |
 | 12 | Open-world scale and streaming | Planned |
@@ -118,6 +118,18 @@ Phase 7 converts live runtime state into a validated `RenderFrame` containing ca
 ## Current building boundary
 
 Phase 8 adds deterministic multi-floor buildings using the shared continuous geometry system. A building owns reproducible rooms, wall partitions, doors, windows, stairs, furniture, interaction points, room queries and collision-volume metadata. Runtime building instances use normal entity IDs, scene nodes and material resources, so generated interiors enter the same renderer path as every other runtime object.
+
+Building dimensions are configuration inputs: room bounds are computed from the configured footprint and wall thickness, then partitioned according to the configured room count. The generator does not use a hidden per-building expansion factor.
+
+## Current vehicle boundary
+
+Phase 9 adds configuration-driven vehicles and complex object assemblies for cars, SUVs, sports cars, pickups, trucks, buses, motorcycles, construction vehicles, emergency vehicles, boats and aircraft. Length, width, height, wheelbase, track, wheel dimensions, seating and other structural settings feed one deterministic generator. Caller-provided seeds drive reproducible variation without an implicit private seed.
+
+Vehicles are ordinary runtime entities using the shared geometry/material/resource/renderer path. Wheels, doors, seats, lights, collision volumes and physics attachment points are exported as engine data rather than being baked into renderer-only code.
+
+## Current physics boundary
+
+`include/exgine/physics.hpp` is the solver-facing production contract for real-time 3D rigid-body physics: body modes, collision shapes, materials, contacts, CCD motion quality, constraints, queries, sleeping, fixed-step simulation, determinism and callbacks. The actual broadphase/narrowphase solver, CCD implementation, character controller, vehicle dynamics and buoyancy implementation are intentionally Phase 10 work; EXGINE does not claim a fake physics runtime before that phase.
 
 ## Building
 
