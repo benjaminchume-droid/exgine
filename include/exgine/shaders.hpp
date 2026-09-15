@@ -10,4 +10,5 @@ class ShaderLibrary { public: ShaderLibrary(); [[nodiscard]] const ShaderProgram
 [[nodiscard]] ShaderProgram make_pbr_shader();
 [[nodiscard]] ShaderProgram make_unlit_shader();
 [[nodiscard]] ShaderProgram make_mobile_pbr_shader();
+[[nodiscard]] ShaderProgram make_mobile_skinned_pbr_shader();
 } // namespace exgine
