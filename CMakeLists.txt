@@ -30,3 +30,9 @@ target_compile_options(exgine_physics_tests PRIVATE
     $<$<CXX_COMPILER_ID:GNU,Clang>:-UNDEBUG>
     $<$<CXX_COMPILER_ID:MSVC>:/UNDEBUG>)
 add_test(NAME exgine_physics_tests COMMAND exgine_physics_tests)
+add_executable(exgine_physics_phase10_tests tests/physics_phase10_tests.cpp)
+target_link_libraries(exgine_physics_phase10_tests PRIVATE exgine_core)
+target_compile_options(exgine_physics_phase10_tests PRIVATE
+    $<$<CXX_COMPILER_ID:GNU,Clang>:-UNDEBUG>
+    $<$<CXX_COMPILER_ID:MSVC>:/UNDEBUG>)
+add_test(NAME exgine_physics_phase10_tests COMMAND exgine_physics_phase10_tests)
