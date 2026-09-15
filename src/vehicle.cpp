@@ -175,8 +175,8 @@ void add_boat(VehicleDefinition& v) {
     add_box(v.geometry,"deck",{c.width*.82f,c.height*.10f,c.length*.76f},c.body_material,{0,c.waterline+c.height*.18f,0});
     add_box(v.geometry,"cabin",{c.cabin_width,c.cabin_height,c.cabin_length},c.glass_material,{0,c.waterline+c.height*.18f+c.cabin_height*.5f,c.length*.08f});
     add_collision(v,{c.width*.92f,hull_h,c.length*.92f},{0,c.waterline-hull_h*.1f,0});
-    v.physics_attachments.push_back({id(v.seed,0x7000),"buoyancy_center",{0,c.waterline-c.height*.10f,0},{0,1,0}});
-    v.physics_attachments.push_back({id(v.seed,0x7001),"center_of_mass",{0,c.waterline+c.height*.10f,0},{0,1,0}});
+    v.physics_attachments.push_back({id(v.seed,0x7000),"buoyancy_center",{0,c.waterline-c.height*.1f,0},{0,1,0}});
+    v.physics_attachments.push_back({id(v.seed,0x7001),"center_of_mass",{0,c.waterline+c.height*.1f,0},{0,1,0}});
 }
 
 void add_aircraft(VehicleDefinition& v) {
@@ -224,8 +224,6 @@ bool VehicleDefinition::valid() const noexcept {
 
 VehicleDefinition generate_vehicle(const VehicleConfig& input) {
     VehicleDefinition v; v.config=sanitize(input); v.seed=v.config.seed;
-    if (v.seed==0) v.seed=0xE6A5E6A5ULL;
-    v.config.seed=v.seed;
     switch(v.config.type) {
     case VehicleType::Motorcycle: add_motorcycle(v); break;
     case VehicleType::Boat: add_boat(v); break;
