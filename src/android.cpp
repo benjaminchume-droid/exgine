@@ -101,6 +101,13 @@ OpenGLESApi make_android_gles_api() noexcept {
     api.EnableVertexAttribArray = load_gl_proc<PFNGLENABLEVERTEXATTRIBARRAYPROC>("glEnableVertexAttribArray");
     api.VertexAttribPointer = load_gl_proc<PFNGLVERTEXATTRIBPOINTERPROC>("glVertexAttribPointer");
     api.DrawElements = load_gl_proc<PFNGLDRAWELEMENTSPROC>("glDrawElements");
+    api.GenTextures = load_gl_proc<PFNGLGENTEXTURESPROC>("glGenTextures");
+    api.BindTexture = load_gl_proc<PFNGLBINDTEXTUREPROC>("glBindTexture");
+    api.TexParameteri = load_gl_proc<PFNGLTEXPARAMETERIPROC>("glTexParameteri");
+    api.TexImage2D = load_gl_proc<PFNGLTEXIMAGE2DPROC>("glTexImage2D");
+    api.GenerateMipmap = load_gl_proc<PFNGLGENERATEMIPMAPPROC>("glGenerateMipmap");
+    api.ActiveTexture = load_gl_proc<PFNGLACTIVETEXTUREPROC>("glActiveTexture");
+    api.DeleteTextures = load_gl_proc<PFNGLDELETETEXTURESPROC>("glDeleteTextures");
     return api;
 }
 
