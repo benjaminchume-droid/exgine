@@ -1,64 +1,12 @@
 #include "exgine/resources.hpp"
-
 #include <bit>
-#include <functional>
+#include <string_view>
 #include <utility>
-
 namespace exgine {
-namespace {
-void mix(std::uint64_t& h, std::uint64_t v) noexcept {
-    h ^= v + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
-}
-}
-
-std::uint64_t material_generation_key(const Material& material,
-                                      const TextureGenerationSettings& settings) noexcept {
-    std::uint64_t h = std::hash<std::string>{}(material.name);
-    mix(h, std::bit_cast<std::uint32_t>(material.base_color.r));
-    mix(h, std::bit_cast<std::uint32_t>(material.base_color.g));
-    mix(h, std::bit_cast<std::uint32_t>(material.base_color.b));
-    mix(h, std::bit_cast<std::uint32_t>(material.roughness));
-    mix(h, std::bit_cast<std::uint32_t>(material.metallic));
-    mix(h, std::bit_cast<std::uint32_t>(material.specular));
-    mix(h, std::bit_cast<std::uint32_t>(material.opacity));
-    mix(h, settings.width); mix(h, settings.height); mix(h, settings.noise.seed);
-    mix(h, std::bit_cast<std::uint32_t>(settings.noise.scale));
-    mix(h, settings.noise.octaves); mix(h, std::bit_cast<std::uint32_t>(settings.noise.persistence));
-    mix(h, std::bit_cast<std::uint32_t>(settings.noise.lacunarity));
-    for (const auto& layer : material.layers) {
-        mix(h, std::hash<std::string>{}(layer.generator));
-        mix(h, std::bit_cast<std::uint32_t>(layer.scale));
-        mix(h, std::bit_cast<std::uint32_t>(layer.strength)); mix(h, layer.seed);
-    }
-    return h;
-}
-
-std::shared_ptr<const MaterialResource> ResourceCache::find_material(std::string_view name) const noexcept {
-    const auto it = materials_.find(std::string{name});
-    return it == materials_.end() ? nullptr : it->second;
-}
-
-bool ResourceCache::store_material(std::shared_ptr<MaterialResource> resource) {
-    if (!resource || !resource->material.valid()) return false;
-    materials_[resource->material.name] = std::move(resource);
-    return true;
-}
-
-bool ResourceCache::erase_material(std::string_view name) noexcept {
-    return materials_.erase(std::string{name}) != 0;
-}
-
-void ResourceCache::clear() noexcept { materials_.clear(); }
-
-std::shared_ptr<MaterialResource> build_material_resource(const Material& material,
-                                                           const TextureGenerationSettings& settings) {
-    if (!material.valid()) return nullptr;
-    auto resource = std::make_shared<MaterialResource>();
-    resource->material = material;
-    resource->generation_key = material_generation_key(material, settings);
-    resource->textures = std::make_shared<TextureSet>(generate_material_textures(material, settings));
-    if (!resource->textures->valid()) return nullptr;
-    return resource;
-}
-
+namespace { void mix(std::uint64_t& h,std::uint64_t v) noexcept{h^=v+0x9e3779b97f4a7c15ULL+(h<<6)+(h>>2);} std::uint64_t hash_bytes(std::string_view value) noexcept{std::uint64_t h=1469598103934665603ULL;for(const unsigned char c:value){h^=c;h*=1099511628211ULL;}return h;} }
+std::uint64_t material_generation_key(const Material& m,const TextureGenerationSettings& s) noexcept{std::uint64_t h=hash_bytes(m.name);mix(h,std::bit_cast<std::uint32_t>(m.base_color.r));mix(h,std::bit_cast<std::uint32_t>(m.base_color.g));mix(h,std::bit_cast<std::uint32_t>(m.base_color.b));mix(h,std::bit_cast<std::uint32_t>(m.roughness));mix(h,std::bit_cast<std::uint32_t>(m.metallic));mix(h,std::bit_cast<std::uint32_t>(m.specular));mix(h,std::bit_cast<std::uint32_t>(m.emission.r));mix(h,std::bit_cast<std::uint32_t>(m.emission.g));mix(h,std::bit_cast<std::uint32_t>(m.emission.b));mix(h,std::bit_cast<std::uint32_t>(m.opacity));mix(h,s.width);mix(h,s.height);mix(h,static_cast<std::uint64_t>(s.noise.type));mix(h,s.noise.seed);mix(h,std::bit_cast<std::uint32_t>(s.noise.scale));mix(h,s.noise.octaves);mix(h,std::bit_cast<std::uint32_t>(s.noise.persistence));mix(h,std::bit_cast<std::uint32_t>(s.noise.lacunarity));for(const auto& l:m.layers){mix(h,hash_bytes(l.generator));mix(h,std::bit_cast<std::uint32_t>(l.scale));mix(h,std::bit_cast<std::uint32_t>(l.strength));mix(h,l.seed);}return h;}
+std::shared_ptr<const MaterialResource> ResourceCache::find_material(std::string_view name) const noexcept{const auto it=materials_.find(std::string{name});return it==materials_.end()?nullptr:it->second;}
+bool ResourceCache::store_material(std::shared_ptr<MaterialResource> r){if(!r||!r->material.valid()||!r->textures||!r->textures->valid())return false;materials_[r->material.name]=std::move(r);return true;}
+bool ResourceCache::erase_material(std::string_view name) noexcept{return materials_.erase(std::string{name})!=0;} void ResourceCache::clear() noexcept{materials_.clear();}
+std::shared_ptr<MaterialResource> build_material_resource(const Material& m,const TextureGenerationSettings& s){if(!m.valid()||s.width==0||s.height==0)return nullptr;auto r=std::make_shared<MaterialResource>();r->material=m;r->generation_key=material_generation_key(m,s);r->textures=std::make_shared<TextureSet>(generate_material_textures(m,s));if(!r->textures->valid())return nullptr;return r;}
 } // namespace exgine
