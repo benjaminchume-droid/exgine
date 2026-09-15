@@ -1,0 +1,82 @@
+#include "exgine/nextgen.hpp"
+
+#include <algorithm>
+#include <cmath>
+#include <set>
+
+namespace exgine {
+
+bool NextGenRenderExecutor::add(NextGenPass pass,std::string name,NextGenPassFn fn){
+    if(name.empty()||!fn) return false;
+    if(std::find_if(passes_.begin(),passes_.end(),[&](const Pass& p){return p.name==name;})!=passes_.end()) return false;
+    passes_.push_back({pass,std::move(name),std::move(fn)}); order_.clear(); return true;
+}
+
+bool NextGenRenderExecutor::execute(std::uint64_t frame_id,float exposure,float fog_transmittance,bool history_valid) const{
+    if(passes_.empty()) return false;
+    NextGenPassContext context{frame_id,exposure,std::clamp(fog_transmittance,0.0f,1.0f),history_valid};
+    for(const auto& pass:passes_) if(!pass.fn(context)) return false;
+    return true;
+}
+
+bool GltfRuntimeMaterialResolver::bind(RuntimeMaterialState& out,std::string name,float metallic,float roughness,std::vector<TextureBindingRecord> textures) const{
+    if(name.empty()||textures.empty()&&name.empty()) return false;
+    out.name=std::move(name); out.metallic=std::clamp(metallic,0.0f,1.0f); out.roughness=std::clamp(roughness,0.045f,1.0f); out.textures=std::move(textures); return true;
+}
+bool GltfRuntimeMaterialResolver::ready(const RuntimeMaterialState& material) const noexcept{
+    if(material.name.empty()) return false;
+    for(const auto& t:material.textures) if(t.asset==invalid_asset||!t.resident) return false;
+    return true;
+}
+
+EndToEndAssetPipeline::EndToEndAssetPipeline(AsyncAssetStreamer::Loader loader,std::uint32_t workers):streamer_(std::move(loader),workers){}
+std::uint64_t EndToEndAssetPipeline::request(std::string uri,StreamPriority priority){const auto id=streamer_.submit(std::move(uri),priority);if(id)++stats_.submitted;return id;}
+std::size_t EndToEndAssetPipeline::pump(std::size_t max_results){const auto results=streamer_.poll(max_results);for(const auto& result:results){if(!result.success){++stats_.failed;continue;}++stats_.decoded;stats_.resident_bytes+=result.bytes.size();++stats_.uploaded;}return results.size();}
+
+bool WorldNavigationController::build(const std::function<float(float,float)>& height,const std::function<bool(float,float)>& walkable){return navigation_.build(height,walkable);}
+bool WorldNavigationController::set_destination(NavAgentState& agent,Vec3 destination){if(agent.entity==invalid_entity)return false;NavigationAgent nav{agent.entity,destination,agent.speed,.2f,{},{},false};if(!navigation_.set_destination(nav,destination))return false;agent.destination=destination;agent.active=true;return true;}
+bool WorldNavigationController::update(NavAgentState& agent,float dt) const noexcept{if(!agent.active||dt<0)return false;NavigationAgent nav{agent.entity,agent.destination,agent.speed,.2f,{},{},true};nav.path=navigation_.mesh().find_path(agent.position,agent.destination);nav.waypoint=0; if(!nav.path.success)return false;const bool ok=navigation_.update(nav,agent.position,dt);if( std::sqrt((agent.position.x-agent.destination.x)*(agent.position.x-agent.destination.x)+(agent.position.z-agent.destination.z)*(agent.position.z-agent.destination.z))<=.2f) agent.active=false;return ok;}
+
+void IntegratedVehicleSimulation::input(float throttle,float brake,float steer,bool reverse) noexcept{state_.vehicle.set_input(throttle,brake,steer,reverse);}
+void IntegratedVehicleSimulation::update(float dt,float speed,float normal_load[4]) noexcept{state_.vehicle.update(dt,speed,normal_load);state_.longitudinal=state_.vehicle.longitudinal_force(0)+state_.vehicle.longitudinal_force(1)+state_.vehicle.longitudinal_force(2)+state_.vehicle.longitudinal_force(3);state_.lateral=state_.vehicle.lateral_force(0)+state_.vehicle.lateral_force(1)+state_.vehicle.lateral_force(2)+state_.vehicle.lateral_force(3);}
+
+bool CharacterAnimationDriver::set_machine(AnimationStateMachine machine){machine_=std::move(machine);return machine_.state()!=0;}
+bool CharacterAnimationDriver::drive(float horizontal_speed,float vertical_speed,bool grounded,bool swimming,bool climbing,float dt,const std::function<void(AnimationClipId,float)>& play) noexcept{if(!play||dt<0)return false;if(!locomotion_controller_.update(locomotion_,horizontal_speed,vertical_speed,grounded,swimming,climbing,dt))return false;if(horizontal_speed<0.05f)machine_.set_float("speed",0.0f);else machine_.set_float("speed",std::abs(horizontal_speed));machine_.set_bool("grounded",grounded);return machine_.update(dt,play);}
+
+void WeatherVisualController::update(const EnvironmentState& state,float altitude) noexcept{
+    renderer_.update(state); frame_.sky=renderer_.sky(); frame_.weather=renderer_.weather(); const float density=frame_.weather.fog_density*std::exp(-std::max(0.0f,altitude)*0.0001f); frame_.fog_transmittance=std::exp(-std::max(0.0f,density));
+}
+AudioFrameSample AudioFrameRuntime::evaluate(const AudioListener& listener,const AudioCue& cue,float occlusion) const noexcept{const auto mix=SpatialAudioProcessor::process(listener,cue,occlusion);return {mix.gain,mix.pan,mix.lowpass};}
+bool UiInteractionRouter::hit(UiRect rect,UiInputPoint point) const noexcept{return point.x>=rect.x&&point.y>=rect.y&&point.x<=rect.x+rect.w&&point.y<=rect.y+rect.h;}
+bool UiInteractionRouter::dispatch(const UiWidget& widget,UiInputPoint point) const noexcept{return widget.visible&&widget.enabled&&point.pressed&&hit(widget.rect,point);}
+
+bool SaveRuntimeBridge::capture(SaveRuntimeSnapshot& snapshot,std::string project,std::string scene,double time,const std::vector<PersistedEntityState>& entities,const std::vector<std::pair<std::string,std::string>>& variables) const{
+    snapshot.world={2,std::move(project),std::move(scene),std::max(0.0,time),entities,variables}; snapshot.bytes=PersistentWorldStore::encode(snapshot.world); return !snapshot.bytes.empty();
+}
+bool SaveRuntimeBridge::restore(const std::vector<std::uint8_t>& bytes,PersistentWorldState& out,std::string& error) const{return PersistentWorldStore::decode(bytes,out,error);}
+
+AndroidPackageCheck AndroidShippingValidator::validate(const AndroidPackagingConfig& config) const{
+    AndroidPackageCheck check; const auto plan=make_android_packaging_plan(config); if(!plan.valid){check.missing.push_back("android_packaging_plan");return check;}
+    if(plan.gradle_project.find("applicationId")==std::string::npos) check.missing.push_back("application_id");
+    if(plan.gradle_project.find("com.android.application")==std::string::npos) check.missing.push_back("android_gradle_plugin");
+    if(plan.app_manifest.find("NativeActivity")==std::string::npos) check.missing.push_back("native_activity");
+    check.valid=check.missing.empty(); return check;
+}
+
+NextGenRuntime::NextGenRuntime(){
+    renderer_.add(NextGenPass::Shadow,"shadow",[](NextGenPassContext& c){return c.frame_id>0;});
+    renderer_.add(NextGenPass::Geometry,"geometry",[](NextGenPassContext&){return true;});
+    renderer_.add(NextGenPass::Lighting,"lighting",[](NextGenPassContext&){return true;});
+    renderer_.add(NextGenPass::Reflections,"reflections",[](NextGenPassContext&){return true;});
+    renderer_.add(NextGenPass::Atmosphere,"atmosphere",[](NextGenPassContext& c){return c.fog_transmittance>=0;});
+    renderer_.add(NextGenPass::Water,"water",[](NextGenPassContext&){return true;});
+    renderer_.add(NextGenPass::Vegetation,"vegetation",[](NextGenPassContext&){return true;});
+    renderer_.add(NextGenPass::Vfx,"vfx",[](NextGenPassContext&){return true;});
+    renderer_.add(NextGenPass::Transparency,"transparency",[](NextGenPassContext&){return true;});
+    renderer_.add(NextGenPass::PostProcess,"post",[](NextGenPassContext& c){return std::isfinite(c.exposure);});
+    renderer_.add(NextGenPass::UI,"ui",[](NextGenPassContext&){return true;});
+    order_.clear(); for(const auto& name:std::vector<std::string>{"shadow","geometry","lighting","reflections","atmosphere","water","vegetation","vfx","transparency","post","ui"}) order_.push_back(name);
+}
+bool NextGenRuntime::execute_frame(std::uint64_t frame_id,float exposure,float fog_transmittance,bool history_valid){if(!renderer_.execute(frame_id,exposure,fog_transmittance,history_valid))return false;++stats_.frames;stats_.render_passes+=renderer_.order().size();return true;}
+
+} // namespace exgine
