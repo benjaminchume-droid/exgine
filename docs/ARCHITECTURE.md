@@ -22,7 +22,9 @@ This document defines the architectural contracts that keep EXGINE connected as 
                  Runtime systems
               /        |        \
            World     Entities    Resources
-              \        |        /
+                       |
+                   Buildings
+                       |
                     Scene
                  /        \
             Lighting    Camera
@@ -42,6 +44,8 @@ Dependencies flow downward toward lower-level services. A lower-level subsystem 
 - IR contains engine-neutral game intent and validated data.
 - Runtime consumes validated IR and owns live game state.
 - World systems generate and stream world state.
+- Entity systems own stable runtime identities.
+- Building generation consumes configuration and existing geometry/material APIs to create building instances keyed by existing `EntityId` values.
 - Scene graph owns runtime spatial hierarchy through stable node IDs.
 - Lighting/camera systems describe renderer-facing scene state without depending on a graphics API.
 - Renderer snapshots runtime state into validated `RenderFrame` data and does not define gameplay rules.
@@ -57,11 +61,15 @@ Headers under `include/exgine/` are the public engine contract. Implementation d
 
 Ownership must be explicit. Prefer value semantics for small immutable descriptions and RAII-owned objects/resources for runtime state. Avoid raw owning pointers. Cross-system references should use stable IDs or handles rather than undocumented pointer ownership.
 
+Building instances are owned by `Runtime` and keyed by their existing entity IDs. Their generated geometry is shared with the normal entity render path; room/opening/interactable/collision metadata has one authoritative building representation.
+
 Render frames own value snapshots of camera/light/material parameters and shared references to immutable texture resources. This keeps a submitted frame valid even when the caller releases its transient local references.
 
 ## Determinism
 
 Procedural systems must be deterministic when given the same explicit seed and configuration. Platform-specific rendering may differ visually, but world generation and gameplay logic should not silently depend on frame timing or undefined platform state. Render-frame entity ordering is explicitly sorted by stable entity ID.
+
+Building room IDs, opening placement, furniture placement, stairs and collision metadata derive from the explicit building seed/configuration and do not use runtime time or pointer identity.
 
 ## Threading
 
@@ -71,9 +79,11 @@ The core architecture should not assume that every system runs on the main threa
 
 Expected user/content errors should be represented through structured diagnostics. Programmer errors should be made visible during development. The engine should not use exceptions as an undocumented control-flow mechanism. Renderer validation fails closed when a geometry or material resource is missing.
 
+Building generation fails cleanly when the target entity is not a building, the runtime is not loaded, required material resources are missing, or the generated definition is invalid.
+
 ## Platform separation
 
-Android, desktop, Vulkan, OpenGL ES, audio backends, and input devices must be isolated behind platform/backend interfaces. Core world, IR, parser, gameplay, scene, lighting, render-frame construction, and shader source contracts should remain portable.
+Android, desktop, Vulkan, OpenGL ES, audio backends, and input devices must be isolated behind platform/backend interfaces. Core world, IR, parser, gameplay, scene, lighting, building generation, render-frame construction, and shader source contracts should remain portable.
 
 ## Phase rule
 
