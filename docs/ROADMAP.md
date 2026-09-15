@@ -107,34 +107,54 @@ Shared HDR exposure, sun-elevation and weather-fog presentation state consumed b
 ## Phase 60 — Production Acceptance Gate — IMPLEMENTED
 Machine-readable acceptance contract covering project loading, scene activation, player spawn, render frame validity, physics, streaming, save round-trip and Android configuration.
 
-## Phase 61 — High-Fidelity World Orchestration — IN PROGRESS
-Unifies deterministic terrain sampling, biome classification, water presence, vegetation/structure/road budgets, regional seeds, interest-point-driven world detail and multi-chunk region construction. The service is exposed through `GameSession` so game runtime code can consume one coherent world layer rather than composing independent terrain/streaming systems.
+## Phase 61–70 — AAA-Oriented Rendering/Simulation Foundations — IMPLEMENTED FOUNDATION
+World orchestration, irradiance probes, reflection queries, volumetric transmittance, HDR tone mapping, terrain material fusion, combined-slip tires, character IK, utility AI/acoustics and explicit AAA acceptance metrics.
 
-**Checkpoint:** identical inputs produce identical region outputs; negative world coordinates map correctly; world queries return terrain/biome/water state; detail selection prioritizes active interest points; multiple regions remain deterministic and independently seeded.
+## Phase 71–80 — Integrated Playable Game Runtime — IMPLEMENTED FOUNDATION
+`PlayableGame` connects project boot, loading, menu/playing/paused/saving lifecycle, GameSession, render-feature planning, temporal history, adaptive quality and production acceptance into one executable game-facing runtime path.
 
-## Phase 62 — Indirect Lighting and Irradiance — IN PROGRESS
-Add probe-grid irradiance generation and world-space sampling so static/dynamic objects can consume a coherent indirect-lighting signal.
+## Phase 81 — Next-Generation Render Pass Execution — IMPLEMENTED FOUNDATION
+A pass executor consumes the high-fidelity rendering sequence each playable frame so shadow, geometry, lighting, reflection, atmosphere, water, vegetation, VFX, transparency, post-process and UI phases are traversed as one ordered runtime.
 
-## Phase 63 — Reflection and Refraction Queries — IN PROGRESS
-Add physically bounded reflection-plane tracing and the policy surface for screen-space, planar and future hardware ray-based reflection paths.
+## Phase 82 — Runtime Material Resolution — IMPLEMENTED FOUNDATION
+Runtime material records bind stable asset IDs to material texture slots and validate residency before a material becomes render-ready.
 
-## Phase 64 — Volumetric Atmosphere — IN PROGRESS
-Add Beer-Lambert style fog transmittance and the data path required for volumetric atmosphere/cloud consumers.
+## Phase 83 — End-to-End Async Asset Pump — IMPLEMENTED FOUNDATION
+Asset requests are submitted asynchronously and pumped through completion accounting for decode/upload/resident-byte telemetry.
 
-## Phase 65 — HDR Tone Mapping — IN PROGRESS
-Add an HDR-to-display tone-mapping step with exposure control for the final presentation path.
+## Phase 84 — World Navigation Controller — IMPLEMENTED FOUNDATION
+Navmesh build, target acquisition and waypoint-driven agent movement are exposed as one world-navigation controller.
 
-## Phase 66 — Terrain Material Fusion — IN PROGRESS
-Add slope/height/moisture/snow-aware material blending so terrain visual identity follows world simulation rather than a single texture.
+## Phase 85 — Integrated Vehicle Simulation — IMPLEMENTED FOUNDATION
+High-fidelity tire/drivetrain vehicle state is advanced as one simulation unit with per-wheel longitudinal/lateral forces.
 
-## Phase 67 — Combined-Slip Tire Model — IN PROGRESS
-Add normalized longitudinal/lateral combined tire force evaluation as the bridge from vehicle state into physics.
+## Phase 86 — Character Animation Driver — IMPLEMENTED FOUNDATION
+Locomotion state drives animation-machine parameters and actual clip playback callbacks.
 
-## Phase 68 — Character Grounding / IK — IN PROGRESS
-Add deterministic ground-foot solving for animation/locomotion integration over uneven terrain.
+## Phase 87 — Weather Visual Controller — IMPLEMENTED FOUNDATION
+Environment weather state is converted into sky/precipitation/fog presentation with altitude-aware transmittance.
 
-## Phase 69 — Utility AI and Acoustic Propagation — IN PROGRESS
-Add reusable utility-based action selection and distance/absorption acoustic evaluation for living-world behavior and spatial audio.
+## Phase 88 — Spatial Audio Frame Runtime — IMPLEMENTED FOUNDATION
+Listener/source distance, occlusion and directional panning are exposed through one audio-frame evaluation path.
 
-## Phase 70 — AAA Acceptance Metrics — IN PROGRESS
-Define the integrated graphics/simulation/audio/runtime acceptance surface. The engine is AAA-ready only when the integrated implementation passes these metrics in an actual running game, not merely because interfaces exist.
+## Phase 89 — UI Interaction Router — IMPLEMENTED FOUNDATION
+Screen-space hit testing and enabled/visible widget dispatch are available to the game UI layer.
+
+## Phase 90 — Save Runtime Bridge — IMPLEMENTED FOUNDATION
+Persistent-world records can be captured to and restored from the binary save representation through a single runtime bridge.
+
+## Phase 91 — Android Shipping Validation — IMPLEMENTED FOUNDATION
+Android application configuration is checked for a valid packaging plan, application ID, Android plugin and NativeActivity manifest.
+
+## Phase 92 — NextGen Runtime Integration — IMPLEMENTED FOUNDATION
+Playable runtime frames now execute the next-generation ordered rendering phases in addition to validating the ordinary RenderFrame path.
+
+## Phase 93 — Integrated Runtime Checkpoint — IN PROGRESS
+Combine actual GPU submission, persistent save restoration, world navigation, vehicle possession, animation state playback, weather effects, audio playback and UI interaction in one showcase project.
+
+## Phase 94 — AAA Runtime Benchmark Gate — IN PROGRESS
+Measure visual/simulation/runtime behavior in a real running game and establish hard acceptance thresholds instead of treating API existence as a quality result.
+
+## End target
+
+The engine's acceptance target is a real continuous 3D game running from an `.exg` project: world loading, player control, buildings, vehicles, NPCs, weather, interaction, persistence, high-fidelity rendering, physics, streaming and Android packaging all operate together. AAA-level quality remains an empirical benchmark that the integrated implementation must earn through rendered and simulated results.
