@@ -136,18 +136,18 @@ private:
 struct TireState { float radius=0.34f,width=0.22f,load=0,slip_ratio=0,slip_angle=0,longitudinal_force=0,lateral_force=0; };
 struct DrivetrainState { float throttle=0,brake=0,steer=0,rpm=800,gear=1,engine_torque=0,drive_torque=0; bool reverse=false; };
 struct SuspensionState { float rest_length=0.35f,length=0.35f,compression=0,velocity=0,spring_force=0,damper_force=0; };
-struct VehicleDynamicsState { DrivetrainState drivetrain{}; TireState tires[4]{}; SuspensionState suspension[4]{}; float speed=0,yaw_rate=0,roll=0,pitch=0; };
+struct HighFidelityVehicleState { DrivetrainState drivetrain{}; TireState tires[4]{}; SuspensionState suspension[4]{}; float speed=0,yaw_rate=0,roll=0,pitch=0; };
 class HighFidelityVehicle {
 public:
     explicit HighFidelityVehicle(float mass=1500.0f);
     void set_input(float throttle,float brake,float steer,bool reverse) noexcept;
     void update(float dt,float forward_speed,float normal_load[4]) noexcept;
-    [[nodiscard]] const VehicleDynamicsState& state() const noexcept { return state_; }
+    [[nodiscard]] const HighFidelityVehicleState& state() const noexcept { return state_; }
     [[nodiscard]] float longitudinal_force(std::size_t wheel) const noexcept;
     [[nodiscard]] float lateral_force(std::size_t wheel) const noexcept;
 private:
     float mass_=1500.0f;
-    VehicleDynamicsState state_{};
+    HighFidelityVehicleState state_{};
 };
 class VehiclePossession {
 public:
