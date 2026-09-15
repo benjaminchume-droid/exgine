@@ -127,3 +127,11 @@ Turn the Phase 18 presentation loop into a reusable mobile runtime boundary. Add
 The mobile layer is an adapter over the existing runtime and renderer rather than a parallel engine. Surface loss suspends presentation without destroying game state; input is delivered as engine-native events; frame deltas are bounded to protect simulation after long stalls or app resumes.
 
 **Checkpoint:** the desktop repository suite covers lifecycle/input/frame-pacing semantics, and the Android NativeActivity connects start/resume/pause/stop/destroy, touch/key input, surface lifecycle and frame timing to the same `AndroidEglPresenter` and EXGINE render-frame pipeline established by Phases 15–18.
+
+## Phase 20 — Asset Pipeline and Runtime Packaging
+
+Establish the portable asset boundary needed to move authored content into EXGINE without coupling the core to a filesystem, Android storage API, or editor-specific representation. Add deterministic asset identity, typed asset records, dependency graphs, package serialization/deserialization, duplicate rejection, dependency validation, dependency-first load ordering and cycle detection.
+
+The package layer remains independent from renderer handles and runtime entities. Resource caches continue to own decoded render-ready objects, while the asset database owns package metadata and bytes. Concrete importers such as glTF/GLB can target this stable contract in the next phase.
+
+**Checkpoint:** `exgine_core` builds the package implementation, the repository suite verifies stable IDs, dependency ordering, round trips, malformed packages and cycle rejection, and no parallel resource ownership model is introduced.
