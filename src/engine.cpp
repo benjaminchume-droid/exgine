@@ -1,5 +1,7 @@
 #include "exgine/engine.hpp"
 
+#include <utility>
+
 namespace exgine {
 
 bool Engine::load(SourceText source) {
