@@ -22,3 +22,12 @@ jobs:
       - name: Test
         working-directory: build
         run: ctest --output-on-failure
+
+      - name: Showcase benchmark
+        run: ./build/exgine_showcase examples/showcase | tee showcase-metrics.txt
+
+      - name: Upload showcase metrics
+        uses: actions/upload-artifact@v4
+        with:
+          name: exgine-showcase-metrics
+          path: showcase-metrics.txt
