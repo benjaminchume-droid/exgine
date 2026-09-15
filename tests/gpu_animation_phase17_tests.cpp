@@ -3,6 +3,7 @@
 #include "exgine/shaders.hpp"
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 using namespace exgine;
 namespace {
@@ -16,7 +17,7 @@ void UniformMatrix4fv(GlInt,GlInt,GlBool,const GlFloat*){++matrix_uploads;} void
 void GenBuffers(GlInt n,GlUInt*v){for(int i=0;i<n;++i)v[i]=next_id++;} void BindBuffer(GlEnum,GlUInt){} void BufferData(GlEnum,GlSize,const void*,GlEnum){} void DeleteBuffers(GlInt,const GlUInt*){} void BindBufferBase(GlEnum,GlUInt,GlUInt){}
 void GenVertexArrays(GlInt n,GlUInt*v){for(int i=0;i<n;++i)v[i]=next_id++;} void BindVertexArray(GlUInt){} void DeleteVertexArrays(GlInt,const GlUInt*){} void EnableVertexAttribArray(GlUInt){} void VertexAttribPointer(GlUInt,GlInt,GlEnum,GlBool,GlInt,const void*){} void DrawElements(GlEnum,GlInt,GlEnum,const void*){++draw_calls;}
 OpenGLESApi api(){OpenGLESApi a;a.Clear=Clear;a.ClearColor=ClearColor;a.Viewport=Viewport;a.Enable=Enable;a.Disable=Disable;a.DepthFunc=DepthFunc;a.BlendFunc=BlendFunc;a.CreateShader=CreateShader;a.ShaderSource=ShaderSource;a.CompileShader=CompileShader;a.GetShaderiv=GetShaderiv;a.GetShaderInfoLog=GetShaderInfoLog;a.DeleteShader=DeleteShader;a.CreateProgram=CreateProgram;a.AttachShader=AttachShader;a.LinkProgram=LinkProgram;a.GetProgramiv=GetProgramiv;a.GetProgramInfoLog=GetProgramInfoLog;a.UseProgram=UseProgram;a.DeleteProgram=DeleteProgram;a.GetUniformLocation=GetUniformLocation;a.UniformMatrix4fv=UniformMatrix4fv;a.Uniform3f=Uniform3f;a.Uniform4f=Uniform4f;a.Uniform1f=Uniform1f;a.Uniform1i=Uniform1i;a.GenBuffers=GenBuffers;a.BindBuffer=BindBuffer;a.BufferData=BufferData;a.DeleteBuffers=DeleteBuffers;a.BindBufferBase=BindBufferBase;a.GenVertexArrays=GenVertexArrays;a.BindVertexArray=BindVertexArray;a.DeleteVertexArrays=DeleteVertexArrays;a.EnableVertexAttribArray=EnableVertexAttribArray;a.VertexAttribPointer=VertexAttribPointer;a.DrawElements=DrawElements;return a;}
-IR make_ir(){IR ir;auto&t=ir.root.add_child(NodeKind::Terrain,"terrain");t.add_property("resolution",8LL);return ir;}
+IR make_ir(){IR ir;auto&t=ir.add_child(NodeKind::Terrain,"terrain");t.add_property("resolution",std::int64_t{8});return ir;}
 }
 int main(){
     const auto shader=make_mobile_skinned_pbr_shader();
@@ -31,6 +32,6 @@ int main(){
     assert(rt.attach_skinned_mesh(e,sm,"skin"));
     Material m=make_real_world_material("steel",7); m.name="skin"; assert(rt.define_material(m));
     assert(rt.play_animation(e,7,0)); rt.update(0.1); RenderConfig rc; rc.backend=RenderBackend::OpenGLES; Renderer r(rc); RenderFrame f; assert(r.build_frame(rt,f)); assert(f.draws.size()==1); assert(f.draws[0].skinned_mesh); assert(!f.draws[0].bone_palette.empty());
-    OpenGLESRenderer gpu(api()); auto out=gpu.submit(f); assert(out.success); assert(out.draw_calls==1); assert(out.triangles==1); assert(shader_compile>=4); assert(shader_link>=2); assert(matrix_uploads>=2); assert(draw_calls==1); gpu.release();
+    OpenGLESRenderer gpu(api()); auto out=gpu.submit(f); assert(out.success); assert(out.draw_calls==1); assert(out.triangles==1); assert(out.animated_draw_calls==1); assert(shader_compile>=4); assert(shader_link>=2); assert(matrix_uploads>=2); assert(draw_calls==1); gpu.release();
     return 0;
 }
