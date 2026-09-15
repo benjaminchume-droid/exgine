@@ -1,5 +1,6 @@
 #pragma once
 
+#include "exgine/geometry.hpp"
 #include "exgine/texture.hpp"
 
 #include <cstdint>
