@@ -68,23 +68,25 @@ Stable content-derived asset IDs, dependency graphs and deterministic versioned 
 ## Phase 21 — Asset Import Framework — IMPLEMENTED
 Concrete authored-content ingestion begins with an importer abstraction and a real OBJ decoder supporting positions, UVs, normals, negative indices, polygon triangulation and generated normals.
 
-**Checkpoint:** authored mesh data becomes the existing `Mesh` contract with deterministic asset identity and without renderer-specific ownership.
-
 ## Phase 22 — Runtime Asset Instancing — IMPLEMENTED
-Decoded assets can be cached by stable `AssetId`, looked up by URI and attached to live Runtime entities through the existing `MeshAssembly`/scene/render path. Material-slot overrides are applied at instance time.
-
-**Checkpoint:** imported geometry is registered once, instantiated on a live entity and remains inside the existing Runtime/SceneGraph/Renderer ownership model.
+Decoded assets can be cached by stable `AssetId`, looked up by URI and attached to live Runtime entities through the existing `MeshAssembly`/scene/render path.
 
 ## Phase 23 — glTF / GLB Ingestion — IMPLEMENTED FOUNDATION
-Memory-based glTF 2.0 and GLB ingestion now decodes embedded base64 buffers, indexed/non-indexed mesh primitives, positions/normals/UVs, basic metallic/roughness materials and node transforms into existing EXGINE contracts.
-
-**Checkpoint:** valid glTF/GLB content becomes existing EXGINE mesh/material/node data, malformed/version-incompatible inputs are rejected, and importer output retains deterministic asset identity.
+Memory-based glTF 2.0 and GLB ingestion decodes mesh primitives, basic PBR factors and node transforms into existing EXGINE contracts.
 
 ## Phase 24 — GPU Asset Residency and Streaming — IMPLEMENTED FOUNDATION
-Persistent OpenGL ES VAO/VBO/IBO residency is now managed by asset identity with configurable byte/mesh budgets, frame touches, deterministic least-recently-used-style eviction telemetry and explicit teardown.
+Persistent OpenGL ES mesh residency is managed by asset identity with configurable budgets, usage tracking, eviction and deterministic teardown.
 
-**Checkpoint:** the residency layer uses the existing OpenGL ES procedure table, owns only GPU mesh objects, releases them deterministically, and does not duplicate runtime/entity/scene ownership.
+## Phase 25 — Universal Game Project and Runtime — IMPLEMENTED
+Data-driven `project.exg` manifests define game metadata, startup scenes, assets, runtime settings and calendar configuration. `GameRuntime` binds one existing Runtime to project scenes, variables, update ticking and save/restore state. Scene storage is supplied by an application callback, keeping the engine independent of filesystem/package/network choices.
+
+**Checkpoint:** project parsing/serialization, scene activation, runtime ticking, variables and save/restore pass without game-specific C++ branches.
+
+## Phase 26 — Universal Time, Day/Night, Seasons and Weather State — IMPLEMENTED
+`EnvironmentSystem` provides continuous simulation time, day/year/week counters, configurable Dawn/Morning/Afternoon/Dusk/Evening/Night phases, sun position, named seasons with reusable coefficients and a generic weather/intensity channel.
+
+**Checkpoint:** time progression, day boundaries, season selection, day-phase derivation and weather-state validation pass independently of any specific game genre.
 
 ## Next extensions
 
-Phase 25 extends glTF to texture/image decoding and full material texture bindings. Phase 26 extends residency into frame-aware asynchronous streaming and render-time cache reuse.
+Continue by deepening content/runtime integration rather than hardcoding game rules: full glTF texture/image material binding, asynchronous package IO, navigation/pathfinding, vehicle-specific simulation, animation state machines, procedural weather rendering, audio, UI, and final Android application packaging can all consume the existing universal contracts.
