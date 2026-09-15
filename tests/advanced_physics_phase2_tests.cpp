@@ -15,7 +15,7 @@ int main() {
     const auto dry = controller.compute_buoyancy(10.0f, 0.0f, {0, 0, 0});
     assert(dry.force.y == 0.0f);
     const auto wet = controller.compute_buoyancy(2.0f, 0.5f, {1, 2, 3});
-    assert(std::abs(wet.force.y - 9810.0f) < 1.0e-3f);
+    assert(std::abs(wet.force.y - (1000.0f * 9.80665f * 2.0f * 0.5f)) < 1.0e-3f);
     assert(wet.center_of_buoyancy.x == 1.0f && wet.center_of_buoyancy.y == 2.0f && wet.center_of_buoyancy.z == 3.0f);
 
     const auto impact = controller.assess_impact(10.0f, 100.0f);
