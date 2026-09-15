@@ -44,11 +44,11 @@ Build the runtime scene hierarchy, stable scene IDs, parent/child transforms, ca
 
 **Checkpoint:** runtime entities connect to one scene graph and renderer-facing lighting/camera state without a graphics API dependency.
 
-## Phase 7 — Renderer and Shaders — IN PROGRESS
+## Phase 7 — Renderer and Shaders — IMPLEMENTED
 
 Build the renderer boundary that converts runtime scene/material/light state into validated render frames. Establish matrices, bounds, frustum culling, material bindings, render passes, shader contracts, and platform GPU backend interfaces. Keep GPU API details behind platform modules.
 
-**Checkpoint:** the actual runtime world and its generated geometry/materials can produce one validated render frame and be accepted by the headless renderer; GPU backend implementations must consume the same contract rather than a parallel path.
+**Checkpoint:** the actual runtime world and its generated geometry/materials produce a validated render frame and are accepted by the deterministic headless renderer; GPU backends consume the same contract rather than a parallel path.
 
 ## Phase 8 — Interactive Buildings
 
@@ -64,7 +64,7 @@ Generate curved vehicle bodies and mechanical assemblies for cars, trucks, buses
 
 ## Phase 10 — Physics
 
-Expand the physics foundation into robust broadphase/narrowphase collision, rigid bodies, continuous collision detection, joints, constraints, character controllers, vehicle dynamics, friction, triggers, sleeping, buoyancy and deterministic simulation options.
+Expand the physics foundation into robust broadphase/narrowphase collision, continuous collision detection, joints, constraints, character controllers, vehicle dynamics, friction, triggers, sleeping, buoyancy and deterministic simulation options.
 
 **Checkpoint:** physical interaction operates on the same runtime entities, geometry and world state used by rendering.
 
