@@ -50,11 +50,11 @@ Build the renderer boundary that converts runtime scene/material/light state int
 
 **Checkpoint:** the actual runtime world and its generated geometry/materials produce a validated render frame and are accepted by the deterministic headless renderer; GPU backends consume the same contract rather than a parallel path.
 
-## Phase 8 — Interactive Buildings
+## Phase 8 — Interactive Buildings — IMPLEMENTED
 
-Generate buildings from reusable geometry, curves and constraints, including varied floorplans, rooms, doors, windows, stairs, furniture, lighting and collision. Support entering/exiting and interior exploration as normal runtime state.
+Generate buildings from reusable geometry and deterministic constraints, including multi-floor room layouts, walls, doors, windows, stairs, furniture, interaction metadata and collision-volume data. Building instances are attached to the normal runtime entity/scene/material/resource pipeline.
 
-**Checkpoint:** generated buildings have unique reproducible layouts and are enterable/interactable in the same world as their exteriors.
+**Checkpoint:** generated buildings have reproducible layouts, are represented by real reusable geometry, expose room and interaction queries, and door state changes the active collision set without creating a parallel world representation.
 
 ## Phase 9 — Vehicles and Complex Objects
 
