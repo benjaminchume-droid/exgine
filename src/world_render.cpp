@@ -7,6 +7,19 @@
 
 namespace exgine {
 
+namespace {
+
+void destroy_render_entity(Runtime& runtime, EntityId id) noexcept {
+    if (!id) return;
+    if (auto* entity = runtime.state().entities.get(id)) {
+        if (entity->scene_node != invalid_scene_node)
+            (void)runtime.scene().destroy(entity->scene_node);
+    }
+    (void)runtime.state().entities.destroy(id);
+}
+
+}
+
 EntityId WorldRenderBridge::create_render_entity(Runtime& runtime, NodeKind kind, const char* name) {
     const auto id = runtime.state().entities.create(kind, name ? std::string{name} : std::string{});
     if (!id) return invalid_entity;
@@ -36,15 +49,13 @@ bool WorldRenderBridge::sync(Runtime& runtime, Vec3 focus_position) {
     auto* streamer = runtime.open_world_streamer();
     if (!streamer) return false;
 
-    // Define these resources once. Runtime::define_material intentionally rebuilds
-    // the generated texture set, so calling it every frame would cause CPU/GPU churn.
     if (!runtime.material_resource("terrain"))
         (void)runtime.define_material(make_real_world_material("terrain", 0x5445525241494Eull));
     if (!runtime.material_resource("water"))
         (void)runtime.define_material(make_real_world_material("water", 0x5741544552ull));
 
-    // Do not let EXWORLD's legacy showcase ground plates occlude the actual
-    // streamed terrain. Procedural terrain is now the authoritative world surface.
+    // The legacy EXWORLD plates are presentation fallbacks. Once the real
+    // streamed world exists they must not compete with it for depth.
     for (const auto id : runtime.state().entities.ids()) {
         auto* e = runtime.state().entities.get(id);
         if (!e) continue;
@@ -88,14 +99,14 @@ bool WorldRenderBridge::sync(Runtime& runtime, Vec3 focus_position) {
 
     for (auto it = terrain_entities_.begin(); it != terrain_entities_.end();) {
         if (chunks.find(it->first) == chunks.end()) {
-            runtime.state().entities.destroy(it->second);
+            destroy_render_entity(runtime, it->second);
             terrain_generations_.erase(it->first);
             it = terrain_entities_.erase(it);
         } else ++it;
     }
     for (auto it = water_entities_.begin(); it != water_entities_.end();) {
         if (chunks.find(it->first) == chunks.end()) {
-            runtime.state().entities.destroy(it->second);
+            destroy_render_entity(runtime, it->second);
             water_generations_.erase(it->first);
             it = water_entities_.erase(it);
         } else ++it;
@@ -108,11 +119,11 @@ bool WorldRenderBridge::sync(Runtime& runtime, Vec3 focus_position) {
 void WorldRenderBridge::clear(Runtime& runtime) noexcept {
     for (const auto& [coord, id] : terrain_entities_) {
         (void)coord;
-        runtime.state().entities.destroy(id);
+        destroy_render_entity(runtime, id);
     }
     for (const auto& [coord, id] : water_entities_) {
         (void)coord;
-        runtime.state().entities.destroy(id);
+        destroy_render_entity(runtime, id);
     }
     terrain_entities_.clear();
     water_entities_.clear();
