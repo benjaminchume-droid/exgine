@@ -27,6 +27,12 @@ jobs:
         run: |
           sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
 
+      - name: Install GLSL validator
+        run: sudo apt-get update && sudo apt-get install -y glslang-tools
+
+      - name: Validate GLES 3.1 shaders
+        run: python3 tools/validate_gles_shaders.py
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
