@@ -7,9 +7,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(EXGINE_BUILD_DEMO "Build the EXGINE desktop demo" ON)
 option(EXGINE_BUILD_TESTS "Build the EXGINE test suite" ON)
 add_library(exgine_core
-    src/diagnostic.cpp src/ir.cpp src/world.cpp src/open_world.cpp src/performance.cpp src/mobile.cpp src/asset.cpp src/import.cpp src/gltf.cpp src/asset_runtime.cpp src/gpu_residency.cpp
+    src/diagnostic.cpp src/ir.cpp src/world.cpp src/open_world.cpp src/performance.cpp src/mobile.cpp src/asset.cpp src/import.cpp src/gltf.cpp src/asset_runtime.cpp src/gpu_residency.cpp src/exg_package.cpp
     src/token.cpp src/lexer.cpp src/parser.cpp src/semantic.cpp src/compiler.cpp src/runtime_clean.cpp src/engine.cpp src/editor.cpp
-    src/geometry.cpp src/character.cpp src/material.cpp src/texture.cpp src/material_pipeline.cpp src/resources.cpp src/scene.cpp src/lighting.cpp src/render.cpp src/shaders_complete.cpp src/gpu_complete.cpp src/gles_tracks.cpp src/gles_gpu_driven.cpp src/gles_production_complete.cpp src/gles_production_hardening.cpp
+    src/geometry.cpp src/character.cpp src/material.cpp src/texture.cpp src/material_pipeline.cpp src/resources.cpp src/scene.cpp src/lighting.cpp src/render.cpp src/shaders_complete.cpp src/gpu_complete.cpp src/gles_tracks.cpp src/gles_gpu_driven.cpp src/gles_production_complete.cpp src/gles_production_hardening.cpp src/reflection_probe_registry.cpp src/gles_ibl.cpp src/gles_probe_capture.cpp src/gles_probe_material.cpp src/gles_vegetation_pbr.cpp
     src/building.cpp src/vehicle.cpp src/vehicle_dynamics.cpp src/physics.cpp src/gameplay.cpp src/animation.cpp src/android.cpp src/environment.cpp src/game.cpp src/production_runtime_fixed.cpp src/production_runtime_tail.cpp src/high_fidelity.cpp src/frontier.cpp src/asset_pipeline.cpp src/advanced_physics.cpp src/world_high_fidelity.cpp src/aaa.cpp src/playable.cpp src/nextgen.cpp src/showcase_game.cpp src/android_audio.cpp)
 target_include_directories(exgine_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_compile_features(exgine_core PUBLIC cxx_std_20)
@@ -65,6 +65,10 @@ if(EXGINE_BUILD_TESTS)
   exgine_add_test(exgine_render_torture_scene_tests tests/render_torture_scene_tests.cpp)
   exgine_add_test(exgine_gles_tracks_tests tests/gles_tracks_tests.cpp)
   exgine_add_test(exgine_gles_production_hardening_tests tests/gles_production_hardening_tests.cpp)
+  exgine_add_test(exgine_exg_package_tests tests/exg_package_tests.cpp)
+  exgine_add_test(exgine_gles_ibl_tests tests/gles_ibl_tests.cpp)
+  exgine_add_test(exgine_gles_probe_capture_tests tests/gles_probe_capture_tests.cpp)
+  exgine_add_test(exgine_gles_vegetation_pbr_tests tests/gles_vegetation_pbr_tests.cpp)
   add_executable(exgine_showcase examples/showcase/main.cpp)
   target_link_libraries(exgine_showcase PRIVATE exgine_core)
   add_executable(exgine_showcase_integration_tests tests/showcase_integration_tests.cpp)
