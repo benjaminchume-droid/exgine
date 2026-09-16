@@ -4,7 +4,6 @@
 #include "exgine/exsound_catalog.hpp"
 #include "exgine/runtime.hpp"
 #include <cassert>
-#include <cmath>
 int main(){
  using namespace exgine;
  ExSound audio(48000);
@@ -13,7 +12,7 @@ int main(){
  auto event=audio.synthesize_event({SoundEvent::Impact,SoundMaterial::Metal,0.8f,4.0f,3.0f,2.0f,0.2f,0.1f,77}); assert(event.valid());
  auto sk=make_humanoid_skeleton(); assert(sk.valid());
  auto pose=make_bind_pose(sk); ExAnimation anim(sk); MotionState motion; motion.speed=3.5f; motion.sprinting=true; auto clip=anim.locomotion(motion,1000); assert(clip.valid(sk)); anim.evaluate(motion,.37f,pose); assert(pose.valid_for(sk));
- auto generated=AnimationClass<1000>::motion(); assert(generated.duration>0&&generated.frequency>0);
+ auto generated=AnimationClass<1000>::graph(sk); assert(generated.valid(sk));
  Runtime runtime; auto generated2=runtime.generate_sound({SoundEvent::Explosion,SoundMaterial::Generic,1,0,2,10,0.3f,0.2f,9}); assert(generated2.valid());
  return 0;
 }
