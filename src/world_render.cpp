@@ -2,6 +2,7 @@
 
 #include "exgine/material.hpp"
 
+#include <cmath>
 #include <string>
 #include <utility>
 
@@ -54,8 +55,6 @@ bool WorldRenderBridge::sync(Runtime& runtime, Vec3 focus_position) {
     if (!runtime.material_resource("water"))
         (void)runtime.define_material(make_real_world_material("water", 0x5741544552ull));
 
-    // The legacy EXWORLD plates are presentation fallbacks. Once the real
-    // streamed world exists they must not compete with it for depth.
     for (const auto id : runtime.state().entities.ids()) {
         auto* e = runtime.state().entities.get(id);
         if (!e) continue;
@@ -64,6 +63,7 @@ bool WorldRenderBridge::sync(Runtime& runtime, Vec3 focus_position) {
     }
 
     const auto& chunks = streamer->chunks();
+    const float time = static_cast<float>(runtime.state().elapsed_seconds);
     for (const auto& [coord, streamed] : chunks) {
         const auto& chunk = streamed.chunk;
         const auto generation = streamed.generation;
@@ -93,6 +93,19 @@ bool WorldRenderBridge::sync(Runtime& runtime, Vec3 focus_position) {
             if (water_generations_[coord] != generation) {
                 if (!attach_mesh(runtime, id, chunk.water, "water")) return false;
                 water_generations_[coord] = generation;
+            }
+
+            // Interim generic water animation: move each streamed patch by a
+            // small phase-shifted vertical wave. It deliberately lives in the
+            // generic world bridge; a future water render pass can replace it
+            // with vertex displacement/reflection without changing gameplay.
+            if (auto* e = runtime.state().entities.get(id); e && e->scene_node) {
+                const float phase = static_cast<float>(coord.x) * 0.71f +
+                                    static_cast<float>(coord.z) * 1.13f;
+                const float wave = std::sin(time * 1.7f + phase) * 0.025f;
+                (void)runtime.scene().set_local_transform(
+                    e->scene_node,
+                    SceneTransform{{0.f, wave, 0.f}, {0.f, 0.f, 0.f}, {1.f, 1.f, 1.f}});
             }
         }
     }
