@@ -1,0 +1,9 @@
+#pragma once
+#include "exgine/gles_production_complete.hpp"
+#include <array>
+#include <cstdint>
+namespace exgine {
+struct ProbeMaterialSet { std::array<const ReflectionProbe*,4> probes{}; std::uint32_t count=0; };
+ProbeMaterialSet select_probe_material_set(const ReflectionProbeRegistry&,Vec3,std::uint32_t max_probes=4) noexcept;
+const char* probe_blended_pbr_fragment_shader() noexcept;
+}
