@@ -2,7 +2,6 @@
 
 #include "exgine/material.hpp"
 
-#include <algorithm>
 #include <string>
 
 namespace exgine {
@@ -36,14 +35,13 @@ bool WorldRenderBridge::sync(Runtime& runtime, Vec3 focus_position) {
     auto* streamer = runtime.open_world_streamer();
     if (!streamer) return false;
 
-    // World rendering is a normal material-resource consumer. Nothing in this
-    // bridge is tied to a particular game's art direction.
     (void)runtime.define_material(make_real_world_material("terrain", 0x5445525241494Eull));
     (void)runtime.define_material(make_real_world_material("water", 0x5741544552ull));
 
     const auto& chunks = streamer->chunks();
     for (const auto& [coord, streamed] : chunks) {
         const auto& chunk = streamed.chunk;
+        const auto generation = streamed.generation;
 
         if (chunk.terrain.valid()) {
             auto it = terrain_entities_.find(coord);
@@ -53,11 +51,9 @@ bool WorldRenderBridge::sync(Runtime& runtime, Vec3 focus_position) {
                 if (!id) return false;
                 terrain_entities_[coord] = id;
             }
-            if (!attach_mesh(runtime, id, chunk.terrain, "terrain")) return false;
-            if (auto* e = runtime.state().entities.get(id)) {
-                e->transform = {0, 0, 0};
-                (void)runtime.scene().set_local_transform(e->scene_node,
-                    SceneTransform{{0, 0, 0}, {0, 0, 0}, {1, 1, 1}});
+            if (terrain_generations_[coord] != generation) {
+                if (!attach_mesh(runtime, id, chunk.terrain, "terrain")) return false;
+                terrain_generations_[coord] = generation;
             }
         }
 
@@ -69,11 +65,9 @@ bool WorldRenderBridge::sync(Runtime& runtime, Vec3 focus_position) {
                 if (!id) return false;
                 water_entities_[coord] = id;
             }
-            if (!attach_mesh(runtime, id, chunk.water, "water")) return false;
-            if (auto* e = runtime.state().entities.get(id)) {
-                e->transform = {0, 0, 0};
-                (void)runtime.scene().set_local_transform(e->scene_node,
-                    SceneTransform{{0, 0, 0}, {0, 0, 0}, {1, 1, 1}});
+            if (water_generations_[coord] != generation) {
+                if (!attach_mesh(runtime, id, chunk.water, "water")) return false;
+                water_generations_[coord] = generation;
             }
         }
     }
@@ -81,12 +75,14 @@ bool WorldRenderBridge::sync(Runtime& runtime, Vec3 focus_position) {
     for (auto it = terrain_entities_.begin(); it != terrain_entities_.end();) {
         if (chunks.find(it->first) == chunks.end()) {
             runtime.state().entities.destroy(it->second);
+            terrain_generations_.erase(it->first);
             it = terrain_entities_.erase(it);
         } else ++it;
     }
     for (auto it = water_entities_.begin(); it != water_entities_.end();) {
         if (chunks.find(it->first) == chunks.end()) {
             runtime.state().entities.destroy(it->second);
+            water_generations_.erase(it->first);
             it = water_entities_.erase(it);
         } else ++it;
     }
@@ -96,10 +92,18 @@ bool WorldRenderBridge::sync(Runtime& runtime, Vec3 focus_position) {
 }
 
 void WorldRenderBridge::clear(Runtime& runtime) noexcept {
-    for (const auto& [coord, id] : terrain_entities_) (void)coord, runtime.state().entities.destroy(id);
-    for (const auto& [coord, id] : water_entities_) (void)coord, runtime.state().entities.destroy(id);
+    for (const auto& [coord, id] : terrain_entities_) {
+        (void)coord;
+        runtime.state().entities.destroy(id);
+    }
+    for (const auto& [coord, id] : water_entities_) {
+        (void)coord;
+        runtime.state().entities.destroy(id);
+    }
     terrain_entities_.clear();
     water_entities_.clear();
+    terrain_generations_.clear();
+    water_generations_.clear();
 }
 
 } // namespace exgine
