@@ -2,7 +2,7 @@ name: EXGINE Android
 
 on:
   push:
-    branches: [main]
+    branches: [main, feature/complete-render-stack]
   workflow_dispatch:
 
 jobs:
