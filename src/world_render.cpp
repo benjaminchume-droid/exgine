@@ -36,8 +36,12 @@ bool WorldRenderBridge::sync(Runtime& runtime, Vec3 focus_position) {
     auto* streamer = runtime.open_world_streamer();
     if (!streamer) return false;
 
-    (void)runtime.define_material(make_real_world_material("terrain", 0x5445525241494Eull));
-    (void)runtime.define_material(make_real_world_material("water", 0x5741544552ull));
+    // Define these resources once. Runtime::define_material intentionally rebuilds
+    // the generated texture set, so calling it every frame would cause CPU/GPU churn.
+    if (!runtime.material_resource("terrain"))
+        (void)runtime.define_material(make_real_world_material("terrain", 0x5445525241494Eull));
+    if (!runtime.material_resource("water"))
+        (void)runtime.define_material(make_real_world_material("water", 0x5741544552ull));
 
     // Do not let EXWORLD's legacy showcase ground plates occlude the actual
     // streamed terrain. Procedural terrain is now the authoritative world surface.
