@@ -21,6 +21,8 @@ public:
 private:
     std::unordered_map<WorldChunkCoord, EntityId, WorldChunkCoordHash> terrain_entities_;
     std::unordered_map<WorldChunkCoord, EntityId, WorldChunkCoordHash> water_entities_;
+    std::unordered_map<WorldChunkCoord, std::uint64_t, WorldChunkCoordHash> terrain_generations_;
+    std::unordered_map<WorldChunkCoord, std::uint64_t, WorldChunkCoordHash> water_generations_;
 
     static EntityId create_render_entity(Runtime& runtime, NodeKind kind, const char* name);
     static bool attach_mesh(Runtime& runtime, EntityId entity, const Mesh& mesh, const char* material);
