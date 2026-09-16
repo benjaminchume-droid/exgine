@@ -1,35 +1,37 @@
 #include "exgine/android_audio.hpp"
 #include <algorithm>
-#include <atomic>
-#include <cmath>
+#include <cstring>
+namespace exgine {
 #if defined(__ANDROID__)
-#include <aaudio/AAudio.h>
-#endif
-namespace exgine { namespace {
-#if defined(__ANDROID__)
-std::atomic<float> g_gain{0.0f};
-std::atomic<float> g_pan{0.0f};
-std::atomic<float> g_phase{0.0f};
-aaudio_data_callback_result_t audio_callback(AAudioStream*,void*,void* audio_data,int32_t num_frames){auto*s=static_cast<float*>(audio_data);const float gain=g_gain.load(std::memory_order_relaxed),pan=std::clamp(g_pan.load(std::memory_order_relaxed),-1.0f,1.0f);float phase=g_phase.load(std::memory_order_relaxed);constexpr float sr=48000.0f,freq=196.0f,tp=6.2831853071795864769f;const float l=gain*(.5f-.25f*pan),r=gain*(.5f+.25f*pan);for(int32_t i=0;i<num_frames;++i){const float tone=std::sin(phase)*.035f,rain=std::sin(phase*7.31f)*.008f;s[i*2]=(tone+rain)*l;s[i*2+1]=(tone-rain)*r;phase+=tp*freq/sr;if(phase>=tp)phase-=tp;}g_phase.store(phase,std::memory_order_relaxed);return AAUDIO_CALLBACK_RESULT_CONTINUE;}
-#endif
+aaudio_data_callback_result_t AndroidAudioBackend::audio_callback(AAudioStream*,void* user,void* audio_data,int32_t num_frames) noexcept {
+    auto* self=static_cast<AndroidAudioBackend*>(user); auto* dst=static_cast<float*>(audio_data);
+    const std::size_t needed=std::size_t(num_frames)*self->channels_, r=self->read_.load(std::memory_order_relaxed), w=self->write_.load(std::memory_order_acquire);
+    const float gain=self->gain_.load(std::memory_order_relaxed), pan=std::clamp(self->pan_.load(std::memory_order_relaxed),-1.0f,1.0f);
+    const float left=std::sqrt(.5f*(1-pan))*gain,right=std::sqrt(.5f*(1+pan))*gain;
+    for(std::size_t i=0;i<needed;i+=2){float l=0,rch=0;if(r!=w){l=self->ring_[(r+i)%ring_samples];if(i+1<needed)rch=self->ring_[(r+i+1)%ring_samples];}dst[i]=l*left;dst[i+1]=rch*right;}
+    self->read_.store((r+needed)%ring_samples,std::memory_order_release); return AAUDIO_CALLBACK_RESULT_CONTINUE;
 }
+#endif
 AndroidAudioBackend::~AndroidAudioBackend(){stop();}
-bool AndroidAudioBackend::start(std::uint32_t sample_rate,std::uint32_t channels)noexcept{
+bool AndroidAudioBackend::start(std::uint32_t sr,std::uint32_t ch) noexcept {
+    if(running_||!sr||ch!=2)return running_; sample_rate_=sr;channels_=ch;clear();
 #if defined(__ANDROID__)
-if(running_)return true;if(!sample_rate||channels!=2)return false;AAudioStreamBuilder*b=nullptr;if(AAudio_createStreamBuilder(&b)!=AAUDIO_OK||!b)return false;AAudioStreamBuilder_setDirection(b,AAUDIO_DIRECTION_OUTPUT);AAudioStreamBuilder_setSampleRate(b,static_cast<int32_t>(sample_rate));AAudioStreamBuilder_setChannelCount(b,static_cast<int32_t>(channels));AAudioStreamBuilder_setFormat(b,AAUDIO_FORMAT_PCM_FLOAT);AAudioStreamBuilder_setPerformanceMode(b,AAUDIO_PERFORMANCE_MODE_LOW_LATENCY);AAudioStreamBuilder_setSharingMode(b,AAUDIO_SHARING_MODE_SHARED);AAudioStreamBuilder_setDataCallback(b,audio_callback,this);AAudioStream*s=nullptr;const auto rc=AAudioStreamBuilder_openStream(b,&s);AAudioStreamBuilder_delete(b);if(rc!=AAUDIO_OK||!s)return false;if(AAudioStream_requestStart(s)!=AAUDIO_OK){AAudioStream_close(s);return false;}stream_=static_cast<void*>(s);running_=true;return true;
+    AAudioStreamBuilder*b=nullptr;if(AAudio_createStreamBuilder(&b)!=AAUDIO_OK||!b)return false;
+    AAudioStreamBuilder_setDirection(b,AAUDIO_DIRECTION_OUTPUT);AAudioStreamBuilder_setSampleRate(b,(int32_t)sr);AAudioStreamBuilder_setChannelCount(b,(int32_t)ch);AAudioStreamBuilder_setFormat(b,AAUDIO_FORMAT_PCM_FLOAT);AAudioStreamBuilder_setPerformanceMode(b,AAUDIO_PERFORMANCE_MODE_LOW_LATENCY);AAudioStreamBuilder_setSharingMode(b,AAUDIO_SHARING_MODE_SHARED);AAudioStreamBuilder_setDataCallback(b,audio_callback,this);
+    AAudioStream*s=nullptr;auto rc=AAudioStreamBuilder_openStream(b,&s);AAudioStreamBuilder_delete(b);if(rc!=AAUDIO_OK||!s)return false;if(AAudioStream_requestStart(s)!=AAUDIO_OK){AAudioStream_close(s);return false;}stream_=s;running_=true;return true;
 #else
-(void)sample_rate;(void)channels;running_=false;return false;
+    return false;
 #endif
 }
-void AndroidAudioBackend::stop()noexcept{
+void AndroidAudioBackend::stop() noexcept {
 #if defined(__ANDROID__)
-if(stream_){auto*s=static_cast<AAudioStream*>(stream_);(void)AAudioStream_requestStop(s);(void)AAudioStream_close(s);stream_=nullptr;}
+    if(stream_){auto*s=static_cast<AAudioStream*>(stream_);(void)AAudioStream_requestStop(s);(void)AAudioStream_close(s);stream_=nullptr;}
 #endif
-running_=false;gain_=0.0f;
+    running_=false;clear();
 }
-void AndroidAudioBackend::set_mix(AudioMixResult mix)noexcept{gain_=std::max(0.0f,mix.gain);pan_=std::clamp(mix.pan,-1.0f,1.0f);
-#if defined(__ANDROID__)
-g_gain.store(gain_,std::memory_order_relaxed);g_pan.store(pan_,std::memory_order_relaxed);
-#endif
+void AndroidAudioBackend::set_mix(AudioMixResult mix) noexcept {gain_.store(std::max(0.0f,mix.gain),std::memory_order_relaxed);pan_.store(std::clamp(mix.pan,-1.0f,1.0f),std::memory_order_relaxed);}
+bool AndroidAudioBackend::submit(const SoundSample&s) noexcept {
+    if(s.channels!=2||s.sample_rate!=sample_rate_||s.pcm.empty())return false;const std::size_t r=read_.load(std::memory_order_acquire),w=write_.load(std::memory_order_relaxed),free_space=ring_samples-1-((w+ring_samples-r)%ring_samples);if(s.pcm.size()>free_space)return false;for(std::size_t i=0;i<s.pcm.size();++i)ring_[(w+i)%ring_samples]=s.pcm[i];write_.store((w+s.pcm.size())%ring_samples,std::memory_order_release);return true;
 }
+void AndroidAudioBackend::clear() noexcept {read_.store(0,std::memory_order_release);write_.store(0,std::memory_order_release);}
 } // namespace exgine
