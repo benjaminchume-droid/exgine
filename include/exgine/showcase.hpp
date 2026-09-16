@@ -3,6 +3,8 @@
 #include "exgine/asset_runtime.hpp"
 #include "exgine/playable.hpp"
 #include "exgine/nextgen.hpp"
+#include "exgine/exanimation.hpp"
+#include "exgine/exsound.hpp"
 #include <cstdint>
 #include <functional>
 #include <string>
@@ -10,7 +12,7 @@
 #include <vector>
 namespace exgine {
 struct ShowcaseMetrics {
- std::uint64_t frames=0,rendered_frames=0,physics_steps=0,stream_results=0,weather_particles=0,audio_sources=0,ui_widgets=0,draw_calls=0,visible_draws=0;
+ std::uint64_t frames=0,rendered_frames=0,physics_steps=0,stream_results=0,weather_particles=0,audio_sources=0,ui_widgets=0,draw_calls=0,visible_draws=0,procedural_animation_updates=0,procedural_audio_events=0;
  double total_frame_ms=0,max_frame_ms=0;
  [[nodiscard]] double average_frame_ms()const noexcept{return frames?total_frame_ms/static_cast<double>(frames):0;}
  [[nodiscard]] bool valid()const noexcept{return frames>0&&rendered_frames>0&&average_frame_ms()>=0&&max_frame_ms>=average_frame_ms();}
@@ -34,7 +36,9 @@ public:
  [[nodiscard]] const AudioWorld& audio()const noexcept{return audio_;}
  [[nodiscard]] bool ready()const noexcept{return ready_;}
 private:
- FileLoader loader_{};PlayableGame game_{};AssetRuntime assets_{};ImageDecoderRegistry images_{};ParticleWorld particles_{};WeatherVisualController weather_{};AudioFrameRuntime audio_runtime_{};UiInteractionRouter ui_router_{};AudioWorld audio_{};UiWorld ui_{};std::uint64_t rain_emitter_=0;EntityId rain_entity_=invalid_entity,prop_entity_=invalid_entity;PhysicsBodyId physics_body_=invalid_physics_body;std::uint64_t crosshair_widget_=0,health_widget_=0;ShowcaseMetrics metrics_{};bool ready_=false,configured_=false;
- [[nodiscard]] bool configure_world();[[nodiscard]] bool load_authored_asset();[[nodiscard]] bool create_physics_probe();[[nodiscard]] bool configure_ui();void update_weather_mesh()noexcept;void update_physics_state(float dt)noexcept;
+ FileLoader loader_{};PlayableGame game_{};AssetRuntime assets_{};ImageDecoderRegistry images_{};ParticleWorld particles_{};WeatherVisualController weather_{};AudioFrameRuntime audio_runtime_{};UiInteractionRouter ui_router_{};AudioWorld audio_{};UiWorld ui_{};
+ ExAnimation* animation_runtime_=nullptr;EntityId animated_entity_=invalid_entity;Skeleton animated_skeleton_{};AnimationClip procedural_clip_{};MotionState animation_state_{};double animation_time_=0;double footstep_clock_=0,ambient_clock_=0,impact_clock_=0,vehicle_clock_=0;Transform previous_player_transform_{};bool previous_player_valid_=false,audio_started_=false;
+ std::uint64_t rain_emitter_=0;EntityId rain_entity_=invalid_entity,prop_entity_=invalid_entity;PhysicsBodyId physics_body_=invalid_physics_body;std::uint64_t crosshair_widget_=0,health_widget_=0;ShowcaseMetrics metrics_{};bool ready_=false,configured_=false;
+ [[nodiscard]] bool configure_world();[[nodiscard]] bool load_authored_asset();[[nodiscard]] bool create_physics_probe();[[nodiscard]] bool configure_ui();[[nodiscard]] bool configure_procedural_content();void update_weather_mesh()noexcept;void update_physics_state(float dt)noexcept;void update_procedural_animation(float dt)noexcept;void update_procedural_audio(float dt)noexcept;
 };
 }
