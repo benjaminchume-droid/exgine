@@ -1,0 +1,4 @@
+#include "exgine/gles_vegetation_pbr.hpp"
+#include <cassert>
+#include <string>
+int main(){exgine::Material m;m.base_color={.2f,.5f,.1f};m.roughness=.7f;m.metallic=.1f;m.specular=.5f;m.opacity=.9f;exgine::VegetationTextureHandles t{};t.valid[0]=t.valid[3]=t.valid[4]=true;std::string v=exgine::vegetation_pbr_vertex_shader(),f=exgine::vegetation_pbr_fragment_shader();assert(v.find("std430")!=std::string::npos);assert(v.find("model[]")!=std::string::npos);assert(f.find("u_base_color")!=std::string::npos);assert(f.find("u_normal")!=std::string::npos);assert(f.find("u_ao")!=std::string::npos);assert(f.find("u_emission")!=std::string::npos);assert(f.find("textureLod")!=std::string::npos);return 0;}
