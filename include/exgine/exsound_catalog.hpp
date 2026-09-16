@@ -1,60 +1,12 @@
 #pragma once
 #include "exgine/exsound.hpp"
+#include <string>
 namespace exgine {
-// 1000 typed sound classes. They are data handles, not 1000 hard-coded waveforms.
-struct SoundClassBase { std::uint32_t id; constexpr explicit SoundClassBase(std::uint32_t i):id(i){} constexpr SoundRecipe recipe() const { return SoundRecipe::catalog(id); } };
-#define EXGINE_SOUND_CLASS(N) struct SoundClass##N:SoundClassBase{SoundClass##N():SoundClassBase(N){}};
-EXGINE_SOUND_CLASS(1)
-EXGINE_SOUND_CLASS(2)
-EXGINE_SOUND_CLASS(3)
-EXGINE_SOUND_CLASS(4)
-EXGINE_SOUND_CLASS(5)
-EXGINE_SOUND_CLASS(6)
-EXGINE_SOUND_CLASS(7)
-EXGINE_SOUND_CLASS(8)
-EXGINE_SOUND_CLASS(9)
-EXGINE_SOUND_CLASS(10)
-EXGINE_SOUND_CLASS(11)
-EXGINE_SOUND_CLASS(12)
-EXGINE_SOUND_CLASS(13)
-EXGINE_SOUND_CLASS(14)
-EXGINE_SOUND_CLASS(15)
-EXGINE_SOUND_CLASS(16)
-EXGINE_SOUND_CLASS(17)
-EXGINE_SOUND_CLASS(18)
-EXGINE_SOUND_CLASS(19)
-EXGINE_SOUND_CLASS(20)
-EXGINE_SOUND_CLASS(21)
-EXGINE_SOUND_CLASS(22)
-EXGINE_SOUND_CLASS(23)
-EXGINE_SOUND_CLASS(24)
-EXGINE_SOUND_CLASS(25)
-EXGINE_SOUND_CLASS(26)
-EXGINE_SOUND_CLASS(27)
-EXGINE_SOUND_CLASS(28)
-EXGINE_SOUND_CLASS(29)
-EXGINE_SOUND_CLASS(30)
-EXGINE_SOUND_CLASS(31)
-EXGINE_SOUND_CLASS(32)
-EXGINE_SOUND_CLASS(33)
-EXGINE_SOUND_CLASS(34)
-EXGINE_SOUND_CLASS(35)
-EXGINE_SOUND_CLASS(36)
-EXGINE_SOUND_CLASS(37)
-EXGINE_SOUND_CLASS(38)
-EXGINE_SOUND_CLASS(39)
-EXGINE_SOUND_CLASS(40)
-EXGINE_SOUND_CLASS(41)
-EXGINE_SOUND_CLASS(42)
-EXGINE_SOUND_CLASS(43)
-EXGINE_SOUND_CLASS(44)
-EXGINE_SOUND_CLASS(45)
-EXGINE_SOUND_CLASS(46)
-EXGINE_SOUND_CLASS(47)
-EXGINE_SOUND_CLASS(48)
-EXGINE_SOUND_CLASS(49)
-EXGINE_SOUND_CLASS(50)
-// The remaining catalog range is available through SoundRecipe::catalog(id),
-// which intentionally avoids generating 950 copies of identical class code.
-#undef EXGINE_SOUND_CLASS
+// 1000+ distinct procedural sound types are representable without copying DSP.
+// The type identity selects a deterministic recipe; the synthesis remains data-driven.
+template<std::uint32_t N> struct SoundClass {
+ static constexpr std::uint32_t id=N;
+ [[nodiscard]] static SoundRecipe recipe() { return SoundRecipe::catalog(N); }
+};
+static_assert(SoundClass<1>::id==1 && SoundClass<1000>::id==1000);
 } // namespace exgine
