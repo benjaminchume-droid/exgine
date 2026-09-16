@@ -5,7 +5,6 @@
 namespace exgine {
 namespace {
 constexpr float pi = 3.14159265358979323846f;
-float clamp01(float x) noexcept { return std::clamp(x, 0.0f, 1.0f); }
 Quat pitch(float a) noexcept { const float s = std::sin(a * .5f); return normalize({s,0,0,std::cos(a*.5f)}); }
 Quat yaw(float a) noexcept { const float s = std::sin(a * .5f); return normalize({0,s,0,std::cos(a*.5f)}); }
 }
@@ -45,8 +44,15 @@ AnimationClip ExAnimation::generate(const ProceduralMotion& m, AnimationClipId i
 }
 
 AnimationClip ExAnimation::locomotion(const MotionState& state, AnimationClipId id) const {
-    ProceduralMotion m; m.name=state.sprinting ? "procedural_sprint" : (state.speed > .05f ? "procedural_walk" : "procedural_idle");
-    const float speed=std::max(0.0f,state.speed); m.frequency=std::clamp(.8f+speed*.28f,.8f,3.5f); m.amplitude=state.sprinting?.7f:.42f; m.bob=state.grounded ? (state.sprinting?.06f:.025f) : .0f; m.sway=.035f; m.stride=state.sprinting?1.25f:1.0f; m.duration=std::clamp(1.2f/(m.frequency),.28f,1.5f); return generate(m,id);
+    ProceduralMotion m;
+    m.name = state.sprinting ? "procedural_sprint" : (state.speed > .05f ? "procedural_walk" : "procedural_idle");
+    const float speed=std::max(0.0f,state.speed);
+    m.frequency=std::clamp(.8f+speed*.28f,.8f,3.5f);
+    m.amplitude=state.sprinting ? .7f : .42f;
+    m.bob=state.grounded ? (state.sprinting ? .06f : .025f) : 0.0f;
+    m.sway=.035f; m.stride=state.sprinting ? 1.25f : 1.0f;
+    m.duration=std::clamp(1.2f/m.frequency,.28f,1.5f);
+    return generate(m,id);
 }
 
 AnimationClip ExAnimation::action(std::string_view name, AnimationClipId id) const {
@@ -60,9 +66,12 @@ AnimationClip ExAnimation::action(std::string_view name, AnimationClipId id) con
 
 void ExAnimation::evaluate(const MotionState& state, float time, SkeletonPose& pose) const noexcept {
     if (!skeleton_ || !pose.valid_for(*skeleton_) || !std::isfinite(time)) return;
-    const float speed=std::max(0.0f,state.speed); const float stride=state.sprinting?1.25f:1.0f; const float amp=state.sprinting?.7f:.42f;
+    const float speed=std::max(0.0f,state.speed);
+    const float stride=state.sprinting ? 1.25f : 1.0f;
+    const float amp=state.sprinting ? .7f : .42f;
     const float phase=time*(.8f+speed*.28f)*2*pi;
-    apply_bone(pose,"root",{{0,state.grounded?std::fabs(std::sin(phase))*(state.sprinting?.06f:.025f):0,0},{},{1,1,1}});
+    const float bob=state.grounded ? std::fabs(std::sin(phase))*(state.sprinting ? .06f : .025f) : 0.0f;
+    apply_bone(pose,"root",{{0,bob,0},{},{1,1,1}});
     apply_bone(pose,"upper_leg_l",{{},{pitch(std::sin(phase)*amp*stride)},{1,1,1}});
     apply_bone(pose,"lower_leg_l",{{},{pitch(-std::sin(phase)*amp*.65f*stride)},{1,1,1}});
     apply_bone(pose,"upper_leg_r",{{},{pitch(-std::sin(phase)*amp*stride)},{1,1,1}});
@@ -74,12 +83,18 @@ void ExAnimation::evaluate(const MotionState& state, float time, SkeletonPose& p
 void AnimationStateMachine::add(AnimationState state) { if (!state.name.empty()) states_.push_back(std::move(state)); }
 
 bool AnimationStateMachine::set(std::string_view name, const AnimationLibrary& library) noexcept {
-    for (const auto& s:states_) if (s.name==name && library.find(s.clip)) { if (!controller_.play(s.clip,s.blend)) return false; current_=s.name; return true; }
+    for (const auto& s:states_) if (s.name==name && library.find(s.clip)) {
+        if (!controller_.play(s.clip,s.blend)) return false;
+        current_=s.name; return true;
+    }
     return false;
 }
 
 void AnimationStateMachine::update(float dt, const MotionState& motion, const AnimationLibrary& library) noexcept {
-    for (const auto& s:states_) if (motion.speed>=s.minimum_speed && motion.speed<s.maximum_speed) { if (current_!=s.name) set(s.name,library); break; }
+    for (const auto& s:states_) if (motion.speed>=s.minimum_speed && motion.speed<s.maximum_speed) {
+        if (current_!=s.name) set(s.name,library);
+        break;
+    }
     controller_.update(dt,library);
 }
 
