@@ -18,7 +18,7 @@ struct SoundLayer { SoundWave wave=SoundWave::Sine;float frequency=220,amplitude
 struct SoundGraph { std::string name;std::vector<SoundNode> nodes;std::uint32_t output=0;float duration=.25f,gain=.5f,pan=0;std::uint32_t seed=1;[[nodiscard]]bool valid()const noexcept;[[nodiscard]]SoundNode*node(std::uint32_t)noexcept;[[nodiscard]]const SoundNode*node(std::uint32_t)const noexcept;std::uint32_t add(SoundNode); };
 using SoundRecipe=SoundGraph;
 struct ProceduralSound { std::string name;SoundWave wave=SoundWave::Noise;float frequency=220,frequency_end=110,duration=.25f,gain=.5f,pan=0,noise=0,resonance=0,distortion=0,reverb=0;SoundEnvelope envelope{};std::uint32_t seed=1;std::vector<SoundLayer> layers;[[nodiscard]]bool valid()const noexcept;[[nodiscard]]SoundGraph graph()const; };
-struct SoundSample { std::uint32_t sample_rate=48000,channels=2;std::vector<float> pcm;[[nodiscard]]bool valid()const noexcept;[[nodiscard]]std::size_t frames()const noexcept{return channels?pcm.size()/channels:0;} };
+struct SoundSample { std::uint32_t sample_rate=48000,channels=2;std::vector<float> pcm;[[nodiscard]]bool valid()const noexcept{return sample_rate>0&&channels>0&&!pcm.empty()&&pcm.size()%channels==0;}[[nodiscard]]std::size_t frames()const noexcept{return channels?pcm.size()/channels:0;} };
 struct SoundEventParams { SoundEvent event=SoundEvent::Impact;SoundMaterial material=SoundMaterial::Generic;float intensity=1,speed=0,mass=1,distance=0,room=0,variation=0;std::uint32_t seed=1; };
 struct VoiceFormantProfile { float formant_shift=1; };
 struct VoiceProfile { VoiceGender gender=VoiceGender::Neutral;VoiceQuality quality=VoiceQuality::Natural;float pitch=1,speed=1,breath=.08f,formant_shift=1,emphasis=0;std::uint32_t seed=1;VoiceFormantProfile voice{}; };
