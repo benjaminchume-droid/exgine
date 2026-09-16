@@ -1,0 +1,2 @@
+#include "exgine/gles_ibl.hpp"
+namespace exgine { bool build_gpu_ibl(OpenGLESRenderer&r,const GlesCubeResource&s,std::uint32_t irradiance_size,std::uint32_t specular_size,std::uint32_t specular_mips,GpuIblResources&o,std::string&e)noexcept{o={};o.environment=s;if(!gpu_convolve_irradiance(r,s,irradiance_size,o.irradiance,e))return false;if(!gpu_prefilter_ggx(r,s,specular_size,specular_mips,o.specular,e))return false;o.valid=true;return true;} }
