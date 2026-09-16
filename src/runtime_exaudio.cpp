@@ -1,11 +1,10 @@
 #include "exgine/runtime.hpp"
 #include "exgine/android_audio.hpp"
-#include <utility>
 namespace exgine {
 Runtime::Runtime():audio_(std::make_unique<AndroidAudioBackend>()){}
 Runtime::~Runtime()=default;
-Runtime::Runtime(Runtime&&)=default;
-Runtime& Runtime::operator=(Runtime&&)=default;
+Runtime::Runtime(Runtime&&) noexcept=default;
+Runtime& Runtime::operator=(Runtime&&) noexcept=default;
 AndroidAudioBackend& Runtime::audio_backend() noexcept { return *audio_; }
 SoundSample Runtime::generate_sound(const SoundEventParams& p) const { return sound_.synthesize_event(p); }
 SoundSample Runtime::generate_sound(const SoundRecipe& r) const { return sound_.synthesize_recipe(r); }
