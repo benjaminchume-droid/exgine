@@ -1,0 +1,11 @@
+#include "exgine/gles_production_complete.hpp"
+#include <algorithm>
+#include <cmath>
+namespace exgine {
+std::uint64_t ReflectionProbeRegistry::create(Vec3 p,float r,float w){ReflectionProbe q{};q.id=next_id_++;q.position=p;q.radius=std::max(0.001f,r);q.weight=std::max(0.0f,w);probes_.push_back(q);return q.id;}
+bool ReflectionProbeRegistry::destroy(std::uint64_t id,OpenGLESApi& api)noexcept{auto it=std::find_if(probes_.begin(),probes_.end(),[&](const auto&p){return p.id==id;});if(it==probes_.end())return false;auto del=[&](GlesCubeResource&r){if(r.texture&&api.DeleteTextures)api.DeleteTextures(1,&r.texture);r={};};del(it->environment);del(it->irradiance);del(it->specular);if(it->depth_rbo&&api.DeleteRenderbuffers)api.DeleteRenderbuffers(1,&it->depth_rbo);probes_.erase(it);return true;}
+ReflectionProbe* ReflectionProbeRegistry::find(std::uint64_t id)noexcept{for(auto&p:probes_)if(p.id==id)return&p;return nullptr;} const ReflectionProbe*ReflectionProbeRegistry::find(std::uint64_t id)const noexcept{for(const auto&p:probes_)if(p.id==id)return&p;return nullptr;}
+const ReflectionProbe*ReflectionProbeRegistry::select(Vec3 p)const noexcept{const ReflectionProbe*best=nullptr;float score=-1;for(const auto&q:probes_){const float dx=p.x-q.position.x,dy=p.y-q.position.y,dz=p.z-q.position.z;const float d=std::sqrt(dx*dx+dy*dy+dz*dz);if(d>q.radius)continue;const float s=q.weight*(1.0f-d/q.radius);if(s>score){score=s;best=&q;}}return best;}
+std::vector<const ReflectionProbe*> ReflectionProbeRegistry::blend(Vec3 p,std::size_t max)const{std::vector<const ReflectionProbe*>r;for(const auto&q:probes_){float dx=p.x-q.position.x,dy=p.y-q.position.y,dz=p.z-q.position.z;float d=std::sqrt(dx*dx+dy*dy+dz*dz);if(d<=q.radius)r.push_back(&q);}std::sort(r.begin(),r.end(),[&](auto*a,auto*b){return a->weight*(1.0f-std::sqrt((p.x-a->position.x)*(p.x-a->position.x)+(p.y-a->position.y)*(p.y-a->position.y)+(p.z-a->position.z)*(p.z-a->position.z))/a->radius)>b->weight*(1.0f-std::sqrt((p.x-b->position.x)*(p.x-b->position.x)+(p.y-b->position.y)*(p.y-b->position.y)+(p.z-b->position.z)*(p.z-b->position.z))/b->radius);});if(r.size()>max)r.resize(max);return r;}
+void ReflectionProbeRegistry::clear(OpenGLESApi&api)noexcept{while(!probes_.empty())destroy(probes_.back().id,api);}
+}
