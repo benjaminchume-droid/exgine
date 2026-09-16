@@ -8,7 +8,7 @@
 namespace exgine {
 enum class SoundWave : std::uint8_t { Sine,Triangle,Saw,Square,Noise,Impulse,FM,Pluck,Formant };
 enum class SoundNodeType : std::uint8_t { Constant,Oscillator,Noise,Impulse,Envelope,Gain,Add,Multiply,Mix,Filter,Resonator,Delay,Reverb,Distortion,Pan,Wavetable,FM,Formant,Granular,Sequencer };
-enum class SoundEvent : std::uint8_t { Footstep,Impact,Explosion,Weapon,Vehicle,UI,Environment,Ambient=Environment,Voice };
+enum class SoundEvent : std::uint8_t { Footstep,Impact,Explosion,Weapon,Vehicle,UI,Door,Environment,Ambient=Environment,Voice };
 enum class SoundMaterial : std::uint8_t { Generic,Stone,Metal,Wood,Glass,Concrete,Grass,Dirt,Sand,Water };
 enum class VoiceGender : std::uint8_t { Neutral,Male,Female };
 enum class VoiceQuality : std::uint8_t { Natural,Robotic,Harsh,Whisper };
