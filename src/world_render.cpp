@@ -3,6 +3,7 @@
 #include "exgine/material.hpp"
 
 #include <string>
+#include <utility>
 
 namespace exgine {
 
@@ -37,6 +38,15 @@ bool WorldRenderBridge::sync(Runtime& runtime, Vec3 focus_position) {
 
     (void)runtime.define_material(make_real_world_material("terrain", 0x5445525241494Eull));
     (void)runtime.define_material(make_real_world_material("water", 0x5741544552ull));
+
+    // Do not let EXWORLD's legacy showcase ground plates occlude the actual
+    // streamed terrain. Procedural terrain is now the authoritative world surface.
+    for (const auto id : runtime.state().entities.ids()) {
+        auto* e = runtime.state().entities.get(id);
+        if (!e) continue;
+        if (e->name == "GroundPlate" || e->name == "GroundGrass" || e->name == "GroundWater")
+            e->active = false;
+    }
 
     const auto& chunks = streamer->chunks();
     for (const auto& [coord, streamed] : chunks) {
