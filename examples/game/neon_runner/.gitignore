@@ -1,0 +1,15 @@
+build/
+bin/
+*.exe
+*.o
+*.a
+*.so
+*.dylib
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.log
