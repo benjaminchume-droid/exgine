@@ -1,112 +1,15 @@
 #include "exgine/gles_production_hardening.hpp"
 #include <algorithm>
 #include <cstring>
-#include <limits>
-
+#include <unordered_map>
 namespace exgine {
-
-GpuSubmissionDecision decide_gpu_submission(const GlesCapabilities& caps) noexcept {
-    GpuSubmissionDecision d{};
-    d.compute = caps.compute;
-    d.ssbo = caps.ssbo;
-    d.indirect = caps.indirect;
-    if (!caps.valid()) { d.reason = "invalid GLES profile"; return d; }
-    if (!caps.es31) { d.reason = "GLES 3.1 unavailable"; return d; }
-    if (!caps.compute) { d.reason = "compute unavailable"; return d; }
-    if (!caps.ssbo) { d.reason = "SSBO unavailable"; return d; }
-    if (!caps.indirect) { d.reason = "indirect draw unavailable"; return d; }
-    if (caps.max_ssbo_bindings < 4) { d.reason = "insufficient SSBO bindings"; return d; }
-    if (caps.max_compute_invocations < 1) { d.reason = "compute limits unavailable"; return d; }
-    d.enabled = true; d.reason = "GLES 3.1 GPU-driven path enabled"; return d;
+static void put32(std::vector<std::byte>& b,std::uint32_t v){for(int i=0;i<4;++i)b.push_back(std::byte((v>>(i*8))&255));}
+static std::uint32_t read32(const std::byte*p)noexcept{return std::uint32_t(std::to_integer<std::uint8_t>(p[0]))|(std::uint32_t(std::to_integer<std::uint8_t>(p[1]))<<8)|(std::uint32_t(std::to_integer<std::uint8_t>(p[2]))<<16)|(std::uint32_t(std::to_integer<std::uint8_t>(p[3]))<<24);}
+GpuSubmissionDecision decide_gpu_submission(const GlesCapabilities& c)noexcept{GpuSubmissionDecision d{};d.compute=c.compute;d.ssbo=c.ssbo;d.indirect=c.indirect;if(!c.valid()){d.reason="invalid GLES profile";return d;}if(!c.es31||!c.compute||!c.ssbo||!c.indirect||c.max_ssbo_bindings<4||c.max_compute_invocations<1){d.reason="GLES 3.1 GPU-driven requirements unavailable";return d;}d.enabled=true;d.reason="GLES 3.1 GPU-driven path enabled";return d;}
+TerrainStitchedPatch build_stitched_terrain_patch(std::uint32_t n,std::uint8_t m,float morph)noexcept{TerrainStitchedPatch p{};p.resolution=std::max(2u,n);p.stitch_mask=m;morph=std::clamp(morph,0.f,1.f);n=p.resolution;for(std::uint32_t z=0;z<n;++z)for(std::uint32_t x=0;x<n;++x){float fx=float(x)/(n-1),fz=float(z)/(n-1),mx=fx,mz=fz;if((m&8)&&x==0&&(z&1))mz=float(z-1)/(n-1);if((m&2)&&x+1==n&&(z&1))mz=float(z-1)/(n-1);if((m&4)&&z==0&&(x&1))mx=float(x-1)/(n-1);if((m&1)&&z+1==n&&(x&1))mx=float(x-1)/(n-1);p.vertices.push_back({{fx,0,fz},{mx,0,mz},morph});}auto id=[n](std::uint32_t x,std::uint32_t z){return z*n+x;};for(std::uint32_t z=0;z+1<n;++z)for(std::uint32_t x=0;x+1<n;++x){auto a=id(x,z),b=id(x+1,z),c=id(x+1,z+1),d=id(x,z+1);p.indices.insert(p.indices.end(),{a,b,c,a,c,d});}return p;}
+bool decompress_rle(std::span<const std::byte> p,std::span<std::byte>o)noexcept{size_t i=0,j=0;while(i+2<=p.size()){auto n=std::to_integer<std::uint8_t>(p[i++]);auto v=p[i++];if(!n||j+n>o.size())return false;std::fill_n(o.data()+j,n,v);j+=n;}return i==p.size()&&j==o.size();}
+bool decompress_lz4_block(std::span<const std::byte>p,std::span<std::byte>o)noexcept{size_t ip=0,op=0;while(ip<p.size()){auto t=std::to_integer<std::uint8_t>(p[ip++]);size_t l=t>>4;if(l==15){std::uint8_t x;do{if(ip>=p.size())return false;x=std::to_integer<std::uint8_t>(p[ip++]);l+=x;}while(x==255);}if(ip+l>p.size()||op+l>o.size())return false;std::memcpy(o.data()+op,p.data()+ip,l);ip+=l;op+=l;if(ip==p.size())break;if(ip+2>p.size())return false;size_t off=std::to_integer<std::uint8_t>(p[ip])|(size_t(std::to_integer<std::uint8_t>(p[ip+1]))<<8);ip+=2;if(!off||off>op)return false;size_t m=t&15;if(m==15){std::uint8_t x;do{if(ip>=p.size())return false;x=std::to_integer<std::uint8_t>(p[ip++]);m+=x;}while(x==255);}m+=4;if(op+m>o.size())return false;for(size_t k=0;k<m;++k)o[op+k]=o[op-off+k];op+=m;}return op==o.size();}
+std::vector<std::byte> compress_expak_block(std::span<const std::byte>in){std::vector<std::byte> raw;raw.insert(raw.end(),{std::byte{'X'},std::byte{'P'},std::byte{'A'},std::byte{'K'},std::byte{0},std::byte{0},std::byte{0},std::byte{0}});put32(raw,(std::uint32_t)in.size());put32(raw,(std::uint32_t)in.size());raw.insert(raw.end(),in.begin(),in.end());std::vector<std::byte> z;std::unordered_map<std::uint32_t,std::size_t> dict;size_t anchor=0,i=0;while(i+4<=in.size()){auto key=read32(in.data()+i);auto it=dict.find(key);dict[key]=i;if(it==dict.end()||i-it->second>65535){++i;continue;}size_t m=0;while(i+m<in.size()&&it->second+m<i&&in[it->second+m]==in[i+m])++m;if(m<4){++i;continue;}size_t lit=i-anchor;std::uint8_t t=std::uint8_t(std::min<size_t>(15,lit)<<4)|std::uint8_t(std::min<size_t>(15,m-4));z.push_back(std::byte(t));if(lit>=15){size_t n=lit-15;while(n>=255){z.push_back(std::byte{255});n-=255;}z.push_back(std::byte(n));}z.insert(z.end(),in.begin()+anchor,in.begin()+i);size_t off=i-it->second;z.push_back(std::byte(off));z.push_back(std::byte(off>>8));if(m-4>=15){size_t n=m-19;while(n>=255){z.push_back(std::byte{255});n-=255;}z.push_back(std::byte(n));}i+=m;anchor=i;}size_t lit=in.size()-anchor;std::uint8_t t=std::uint8_t(std::min<size_t>(15,lit)<<4);z.push_back(std::byte(t));if(lit>=15){size_t n=lit-15;while(n>=255){z.push_back(std::byte{255});n-=255;}z.push_back(std::byte(n));}z.insert(z.end(),in.begin()+anchor,in.end());if(z.size()+16>=raw.size())return raw;std::vector<std::byte> out;out.insert(out.end(),{std::byte{'X'},std::byte{'P'},std::byte{'A'},std::byte{'K'},std::byte{2},std::byte{0},std::byte{0},std::byte{0}});put32(out,(std::uint32_t)in.size());put32(out,(std::uint32_t)z.size());out.insert(out.end(),z.begin(),z.end());return out;}
+std::vector<std::byte> build_expak_package(std::span<const std::span<const std::byte>>blocks){std::vector<std::byte>o;o.insert(o.end(),{std::byte{'E'},std::byte{'X'},std::byte{'P'},std::byte{'K'},std::byte{1},std::byte{0},std::byte{0},std::byte{0}});put32(o,(std::uint32_t)blocks.size());for(auto b:blocks){auto c=compress_expak_block(b);put32(o,(std::uint32_t)c.size());o.insert(o.end(),c.begin(),c.end());}return o;}
+bool decode_expak_block(std::span<const std::byte>b,std::vector<std::byte>&d,std::string&e){if(b.size()<16){e="EXPAK header truncated";return false;}ExPakBlockHeader h{};h.magic=read32(b.data());h.codec=std::to_integer<std::uint8_t>(b[4]);h.decoded_size=read32(b.data()+8);h.payload_size=read32(b.data()+12);if(h.magic!=0x4B415058||h.payload_size!=b.size()-16){e="invalid EXPAK block";return false;}d.assign(h.decoded_size,{});auto p=b.subspan(16);if(h.codec==0){std::copy(p.begin(),p.end(),d.begin());return true;}bool ok=h.codec==1?decompress_rle(p,d):h.codec==2?decompress_lz4_block(p,d):false;if(!ok){d.clear();e="EXPAK decompression failed";}return ok;}
 }
-
-TerrainStitchedPatch build_stitched_terrain_patch(std::uint32_t resolution, std::uint8_t stitch_mask, float morph) noexcept {
-    TerrainStitchedPatch p{};
-    p.resolution = std::max<std::uint32_t>(2, resolution);
-    p.stitch_mask = stitch_mask;
-    morph = std::clamp(morph, 0.0f, 1.0f);
-    const auto n = p.resolution;
-    p.vertices.reserve(static_cast<std::size_t>(n) * n);
-    auto coarse_coord = [n](std::uint32_t x, std::uint32_t z, std::uint8_t mask) {
-        if ((mask & 8u) && x == 0 && (z & 1u)) return z - 1;
-        if ((mask & 2u) && x + 1 == n && (z & 1u)) return z - 1;
-        if ((mask & 4u) && z == 0 && (x & 1u)) return x - 1;
-        if ((mask & 1u) && z + 1 == n && (x & 1u)) return x - 1;
-        return z;
-    };
-    for (std::uint32_t z=0; z<n; ++z) for (std::uint32_t x=0; x<n; ++x) {
-        const float fx=float(x)/float(n-1), fz=float(z)/float(n-1);
-        float mx=fx, mz=fz;
-        if ((stitch_mask&8u)&&x==0&&(z&1u)) mz=float(coarse_coord(x,z,8))/float(n-1);
-        if ((stitch_mask&2u)&&x+1==n&&(z&1u)) mz=float(coarse_coord(x,z,2))/float(n-1);
-        if ((stitch_mask&4u)&&z==0&&(x&1u)) mx=float(coarse_coord(x,z,4))/float(n-1);
-        if ((stitch_mask&1u)&&z+1==n&&(x&1u)) mx=float(coarse_coord(x,z,1))/float(n-1);
-        p.vertices.push_back({{fx,0,fz},{mx,0,mz},morph});
-    }
-    auto id=[n](std::uint32_t x,std::uint32_t z){return z*n+x;};
-    auto edge_id=[&](std::uint32_t x,std::uint32_t z)->std::uint32_t {
-        if ((stitch_mask&8u)&&x==0&&(z&1u)) --z;
-        if ((stitch_mask&2u)&&x+1==n&&(z&1u)) --z;
-        if ((stitch_mask&4u)&&z==0&&(x&1u)) --x;
-        if ((stitch_mask&1u)&&z+1==n&&(x&1u)) --x;
-        return id(x,z);
-    };
-    p.indices.reserve(static_cast<std::size_t>(n-1)*(n-1)*6);
-    for(std::uint32_t z=0;z+1<n;++z) for(std::uint32_t x=0;x+1<n;++x) {
-        const auto a=edge_id(x,z), b=edge_id(x+1,z), c=edge_id(x+1,z+1), d=edge_id(x,z+1);
-        if(a!=b&&b!=c&&c!=a) p.indices.insert(p.indices.end(),{a,b,c});
-        if(a!=c&&c!=d&&d!=a) p.indices.insert(p.indices.end(),{a,c,d});
-    }
-    return p;
-}
-
-bool decompress_rle(std::span<const std::byte> payload, std::span<std::byte> output) noexcept {
-    std::size_t in=0,out=0;
-    while(in+2<=payload.size()) {
-        const auto count=static_cast<std::uint8_t>(payload[in++]);
-        const auto value=payload[in++];
-        if(count==0 || out+count>output.size()) return false;
-        std::fill_n(output.data()+out,count,value); out+=count;
-    }
-    return in==payload.size() && out==output.size();
-}
-
-static std::uint32_t read32(const std::byte* p) noexcept {
-    return std::uint32_t(std::to_integer<std::uint8_t>(p[0])) | (std::uint32_t(std::to_integer<std::uint8_t>(p[1]))<<8) |
-           (std::uint32_t(std::to_integer<std::uint8_t>(p[2]))<<16) | (std::uint32_t(std::to_integer<std::uint8_t>(p[3]))<<24);
-}
-
-bool decompress_lz4_block(std::span<const std::byte> payload, std::span<std::byte> output) noexcept {
-    std::size_t ip=0,op=0;
-    while(ip<payload.size()) {
-        const std::uint8_t token=std::to_integer<std::uint8_t>(payload[ip++]);
-        std::size_t lit=token>>4;
-        if(lit==15){std::uint8_t x=255;while(x==255){if(ip>=payload.size())return false;x=std::to_integer<std::uint8_t>(payload[ip++]);lit+=x;}}
-        if(ip+lit>payload.size()||op+lit>output.size())return false;
-        std::memcpy(output.data()+op,payload.data()+ip,lit);ip+=lit;op+=lit;
-        if(ip==payload.size()) break;
-        if(ip+2>payload.size())return false;
-        const std::size_t off=std::size_t(std::to_integer<std::uint8_t>(payload[ip]))|(std::size_t(std::to_integer<std::uint8_t>(payload[ip+1]))<<8);ip+=2;
-        if(off==0||off>op)return false;
-        std::size_t len=token&15;
-        if(len==15){std::uint8_t x=255;while(x==255){if(ip>=payload.size())return false;x=std::to_integer<std::uint8_t>(payload[ip++]);len+=x;}}
-        len+=4;if(op+len>output.size())return false;
-        for(std::size_t i=0;i<len;++i) output[op+i]=output[op-off+i]; op+=len;
-    }
-    return op==output.size();
-}
-
-bool decode_expak_block(std::span<const std::byte> block, std::vector<std::byte>& decoded, std::string& error) {
-    if(block.size()<16){error="EXPAK block header truncated";return false;}
-    ExPakBlockHeader h{};h.magic=read32(block.data());h.codec=std::to_integer<std::uint8_t>(block[4]);h.decoded_size=read32(block.data()+8);h.payload_size=read32(block.data()+12);
-    if(h.magic!=0x4B415058){error="invalid EXPAK magic";return false;}
-    if(h.payload_size!=block.size()-16 || h.decoded_size>std::numeric_limits<std::size_t>::max()){error="invalid EXPAK sizes";return false;}
-    decoded.assign(h.decoded_size,std::byte{});const auto payload=block.subspan(16);
-    bool ok=false;if(h.codec==0){if(payload.size()!=decoded.size()) {error="raw size mismatch";return false;}std::copy(payload.begin(),payload.end(),decoded.begin());ok=true;}
-    else if(h.codec==1)ok=decompress_rle(payload,decoded);
-    else if(h.codec==2)ok=decompress_lz4_block(payload,decoded);
-    else {error="unsupported EXPAK codec";return false;}
-    if(!ok){error="EXPAK decompression failed";decoded.clear();return false;}return true;
-}
-
-} // namespace exgine
