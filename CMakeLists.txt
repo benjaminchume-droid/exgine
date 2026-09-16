@@ -7,7 +7,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(EXGINE_BUILD_DEMO "Build the EXGINE desktop demo" ON)
 option(EXGINE_BUILD_TESTS "Build the EXGINE test suite" ON)
 add_library(exgine_core
-    src/diagnostic.cpp src/ir.cpp src/world.cpp src/open_world.cpp src/performance.cpp src/mobile.cpp src/asset.cpp src/import.cpp src/gltf.cpp src/asset_runtime.cpp src/gpu_residency.cpp
+    src/diagnostic.cpp src/ir.cpp src/world.cpp src/open_world.cpp src/world_render.cpp src/performance.cpp src/mobile.cpp src/asset.cpp src/import.cpp src/gltf.cpp src/asset_runtime.cpp src/gpu_residency.cpp
     src/token.cpp src/lexer.cpp src/parser.cpp src/semantic.cpp src/compiler.cpp src/runtime_clean.cpp src/engine.cpp src/editor.cpp
     src/geometry.cpp src/character.cpp src/material.cpp src/texture.cpp src/material_pipeline.cpp src/resources.cpp src/scene.cpp src/lighting.cpp src/render.cpp src/shaders.cpp src/gpu.cpp
     src/building.cpp src/vehicle.cpp src/vehicle_dynamics.cpp src/physics.cpp src/gameplay.cpp src/animation.cpp src/exanimation.cpp src/exsound.cpp src/runtime_exaudio.cpp src/android.cpp src/environment.cpp src/game.cpp src/production_runtime_fixed.cpp src/production_runtime_tail.cpp src/high_fidelity.cpp src/frontier.cpp src/asset_pipeline.cpp src/advanced_physics.cpp src/world_high_fidelity.cpp src/aaa.cpp src/playable.cpp src/nextgen.cpp src/showcase_game.cpp src/android_audio.cpp)
