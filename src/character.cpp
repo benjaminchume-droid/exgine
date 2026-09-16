@@ -37,19 +37,43 @@ MeshAssembly generate_character(const CharacterDefinition& definition) {
     const float limb_radius = 0.075f * build;
     const float jitter = variation(a.seed, 11, 0.025f);
 
+    // Higher segment counts for more "real" 3D silhouette (GTA:SA-class poly budget).
+    const std::uint32_t body_seg = 24;
+    const std::uint32_t body_rings = 10;
+    const std::uint32_t limb_seg = 16;
+    const std::uint32_t limb_rings = 8;
+    const std::uint32_t head_seg = 28;
+    const std::uint32_t head_rings = 14;
+
     MeshAssembly out;
-    add_part(out, "torso", make_capsule(shoulder * 0.72f, torso_h, 16, 6), a.shirt_material,
+    // Torso
+    add_part(out, "torso", make_capsule(shoulder * 0.72f, torso_h, body_seg, body_rings), a.shirt_material,
              {jitter, torso_y, 0});
-    add_part(out, "head", make_sphere({head_r, 20, 10}), a.skin_material,
+    // Neck
+    add_part(out, "neck", make_capsule(head_r * 0.45f, head_r * 0.55f, 12, 4), a.skin_material,
+             {jitter, leg + torso_h + head_r * 0.35f, 0});
+    // Head
+    add_part(out, "head", make_sphere({head_r, head_seg, head_rings}), a.skin_material,
              {jitter, head_y, 0});
-    add_part(out, "left_arm", make_capsule(limb_radius, torso_h * 0.92f, 12, 5), a.shirt_material,
+    // Hair (simple volume on top of head)
+    add_part(out, "hair", make_sphere({head_r * 1.05f, 16, 8}), a.hair_material.empty() ? "hair" : a.hair_material,
+             {jitter, head_y + head_r * 0.25f, -head_r * 0.05f}, {1.05f, 0.7f, 1.05f});
+    // Arms
+    add_part(out, "left_arm", make_capsule(limb_radius, torso_h * 0.92f, limb_seg, limb_rings), a.shirt_material,
              {-shoulder - limb_radius, arm_y, 0});
-    add_part(out, "right_arm", make_capsule(limb_radius, torso_h * 0.92f, 12, 5), a.shirt_material,
+    add_part(out, "right_arm", make_capsule(limb_radius, torso_h * 0.92f, limb_seg, limb_rings), a.shirt_material,
              {shoulder + limb_radius, arm_y, 0});
-    add_part(out, "left_leg", make_capsule(limb_radius * 1.15f, leg * 0.92f, 12, 5), a.pants_material,
+    // Hands
+    add_part(out, "left_hand", make_sphere({limb_radius * 1.15f, 12, 6}), a.skin_material,
+             {-shoulder - limb_radius, arm_y - torso_h * 0.5f, 0});
+    add_part(out, "right_hand", make_sphere({limb_radius * 1.15f, 12, 6}), a.skin_material,
+             {shoulder + limb_radius, arm_y - torso_h * 0.5f, 0});
+    // Legs
+    add_part(out, "left_leg", make_capsule(limb_radius * 1.15f, leg * 0.92f, limb_seg, limb_rings), a.pants_material,
              {-0.12f * build, leg * 0.5f, 0});
-    add_part(out, "right_leg", make_capsule(limb_radius * 1.15f, leg * 0.92f, 12, 5), a.pants_material,
+    add_part(out, "right_leg", make_capsule(limb_radius * 1.15f, leg * 0.92f, limb_seg, limb_rings), a.pants_material,
              {0.12f * build, leg * 0.5f, 0});
+    // Feet
     add_part(out, "left_foot", make_box({{0.18f*build, 0.10f*h, 0.30f*build}}), a.shoe_material,
              {-0.12f*build, 0.05f*h, 0.045f*h});
     add_part(out, "right_foot", make_box({{0.18f*build, 0.10f*h, 0.30f*build}}), a.shoe_material,
