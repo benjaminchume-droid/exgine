@@ -36,7 +36,7 @@ public:
     [[nodiscard]] GameSession& session() noexcept{return session_;}
     [[nodiscard]] const GameSession& session() const noexcept{return session_;}
 private:
-    PlayableConfig config_{}; GameSession session_{}; RenderFeatureGraph features_{}; RenderExecutionPlan render_plan_{}; TemporalReconstruction temporal_{}; GameFlowController flow_{}; WorldPresentation presentation_{}; EngineProfiler profiler_{}; AdaptiveQuality quality_{}; NextGenRuntime nextgen_{}; ProductionAcceptanceResult acceptance_{}; PlayableStatus status_=PlayableStatus::Closed; std::uint64_t frame_id_=0; bool project_open_=false,save_roundtrip_=false;
+    PlayableConfig config_{}; GameSession session_{}; RenderFeatureGraph features_{}; RenderExecutionPlan render_plan_{}; TemporalReconstruction temporal_{}; GameFlowController flow_{}; WorldPresentation presentation_{}; EngineProfiler profiler_{}; AdaptiveQuality quality_{}; NextGenRuntime nextgen_{}; ProductionAcceptanceResult acceptance_{}; PlayableStatus status_=PlayableStatus::Closed; std::uint64_t frame_id_=0; bool project_open_=false,save_roundtrip_=false,last_render_frame_valid_=false;
     bool compile_render_plan() noexcept; void refresh_acceptance() noexcept;
 };
-}
+} // namespace exgine
