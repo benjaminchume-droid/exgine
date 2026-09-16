@@ -7,6 +7,7 @@
 #include "exgine/exsound.hpp"
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -37,7 +38,7 @@ public:
  [[nodiscard]] bool ready()const noexcept{return ready_;}
 private:
  FileLoader loader_{};PlayableGame game_{};AssetRuntime assets_{};ImageDecoderRegistry images_{};ParticleWorld particles_{};WeatherVisualController weather_{};AudioFrameRuntime audio_runtime_{};UiInteractionRouter ui_router_{};AudioWorld audio_{};UiWorld ui_{};
- ExAnimation* animation_runtime_=nullptr;EntityId animated_entity_=invalid_entity;Skeleton animated_skeleton_{};AnimationClip procedural_clip_{};MotionState animation_state_{};double animation_time_=0;double footstep_clock_=0,ambient_clock_=0,impact_clock_=0,vehicle_clock_=0;Transform previous_player_transform_{};bool previous_player_valid_=false,audio_started_=false;
+ std::unique_ptr<ExAnimation> animation_runtime_{};EntityId animated_entity_=invalid_entity;Skeleton animated_skeleton_{};AnimationClip procedural_clip_{};MotionState animation_state_{};double animation_time_=0;double footstep_clock_=0,ambient_clock_=0,impact_clock_=0,vehicle_clock_=0;Transform previous_player_transform_{};bool previous_player_valid_=false,audio_started_=false;
  std::uint64_t rain_emitter_=0;EntityId rain_entity_=invalid_entity,prop_entity_=invalid_entity;PhysicsBodyId physics_body_=invalid_physics_body;std::uint64_t crosshair_widget_=0,health_widget_=0;ShowcaseMetrics metrics_{};bool ready_=false,configured_=false;
  [[nodiscard]] bool configure_world();[[nodiscard]] bool load_authored_asset();[[nodiscard]] bool create_physics_probe();[[nodiscard]] bool configure_ui();[[nodiscard]] bool configure_procedural_content();void update_weather_mesh()noexcept;void update_physics_state(float dt)noexcept;void update_procedural_animation(float dt)noexcept;void update_procedural_audio(float dt)noexcept;
 };
