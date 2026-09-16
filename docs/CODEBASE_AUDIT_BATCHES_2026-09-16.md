@@ -28,11 +28,11 @@ The target path is:
 | 10 | Camera/projection | EXWORLD gameplay camera convention was opposite the renderer convention | **fixed in EXWORLD** |
 | 11 | Procedural terrain | Terrain mesh generation exists | audited |
 | 12 | World streaming | OpenWorldStreamer exists but streamed chunks were not automatically visible in the game frame | **fixed by WorldRenderBridge integration** |
-| 13 | Water | Water geometry exists; dedicated animated water shading is missing | remaining |
+| 13 | Water | Water geometry exists; interim patch animation exists; dedicated animated water shading is missing | remaining |
 | 14 | Vegetation | Vegetation instances are generated but need render instancing/batching | remaining |
 | 15 | Buildings | Procedural building geometry/collision exists | audited |
 | 16 | Vehicles | Procedural vehicle geometry and dynamics exist | audited |
-| 17 | Characters | Procedural character geometry exists | audited |
+| 17 | Characters | Procedural character geometry exists | audited; stale legacy test expectation remains |
 | 18 | Skinning/animation | GPU skinning exists; attachment is not yet atomic across mesh/skeleton/pose | remaining |
 | 19 | Lighting | Light data reaches mobile PBR path | audited |
 | 20 | Shadows | Metadata/API exists; full mobile shadow-map render pass is still required | remaining |
@@ -40,9 +40,9 @@ The target path is:
 | 22 | VFX | Particle/environment systems exist but need production GPU integration | remaining |
 | 23 | EXSound | Runtime procedural audio path exists | audited |
 | 24 | Physics/gameplay | CPU physics/gameplay integration exists | audited |
-| 25 | Terrain collision | Visual terrain is not yet automatically the authoritative physical surface | remaining |
+| 25 | Terrain collision | Streamed terrain now creates matching static heightfield physics bodies and unloads them with visual chunks | **fixed by WorldRenderBridge** |
 | 26 | Mobile input/UI | Android events reach EXWORLD; UI is currently world-space geometry rather than a dedicated overlay pass | remaining |
-| 27 | Save/restore | Production save path exists | audited |
+| 27 | Save/restore | Production save path exists; PlayableGame restore now rebuilds a real render frame before acceptance | **fixed** |
 | 28 | APK/package pipeline | Installable signed debug artifact path exists; physical-device GPU certification remains required | in verification |
 
 ## Confirmed foundational defects
@@ -51,7 +51,15 @@ The target path is:
 2. **Procedural chunks were not automatically renderable.** `WorldRenderBridge` existed in EXGINE but EXWORLD did not invoke it. EXWORLD's camera now synchronizes the bridge with the runtime focus, putting streamed terrain/water through the ordinary entity/scene/render path.
 3. **Legacy flat showcase surfaces could occlude the procedural world.** The bridge disables those fallback plates after streamed world activation.
 4. **Streamed render entity lifetime leaked SceneGraph nodes.** `WorldRenderBridge` now destroys the associated SceneGraph node before destroying its EntityRegistry entry.
-5. **Engine documentation overstated completion.** Phase APIs/tests are not equivalent to device-certified AAA rendering. This audit uses end-to-end acceptance instead.
+5. **Streamed visual terrain and collision could diverge.** The bridge now creates a static `HeightField` collider from the same streamed terrain mesh and removes/rebuilds it with chunk generations.
+6. **Playable restore could claim acceptance without rebuilding a renderable frame.** Restore now performs an actual frame build/validation before returning success.
+7. **EXGINE had a malformed render-feature initializer that prevented a clean repository build.** The feature graph was rewritten with typed nodes; the build then succeeded.
+8. **One legacy character unit test is stale.** The current character generator intentionally produces a richer multipart character than the test's old fixed `parts.size()==10` assertion. The production generator was not reduced to satisfy that obsolete count; the test must be updated to assert semantic components/count ranges instead.
+9. **Engine documentation overstated completion.** Phase APIs/tests are not equivalent to device-certified AAA rendering. This audit uses end-to-end acceptance instead.
+
+## Current CI evidence
+
+The corrected EXGINE build reached 100% compilation successfully. The following existing tests passed in that run, including world streaming, GPU, animation, Android, asset, physics, world-render bridge, high-fidelity, frontier, playable-adjacent and showcase integration tests. The remaining failing test run was caused by the stale character-part-count assertion and a PlayableGame restore acceptance assertion; the latter has now been fixed in source and is awaiting the next CI run.
 
 ## Remaining high-impact rendering work
 
@@ -63,7 +71,6 @@ The target path is:
 - GPU-driven frustum/occlusion/LOD selection for very large scenes.
 - Atomic skinned asset binding: skeleton + skinned mesh + animation pose + materials.
 - Authored texture/material maps inside `.exg` packages rather than relying primarily on runtime procedural material generation.
-- Automatic collision generation/streaming from the same terrain chunks used for visual rendering.
 - Dedicated screen-space UI/input rendering instead of world-space HUD geometry.
 - Runtime telemetry reporting asset counts, draw counts, GPU residency, shader failures and stream state on-device.
 
