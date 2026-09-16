@@ -6,7 +6,7 @@ using namespace exgine::scale;
 
 int main(){
     WorldStreamingConfig cfg; cfg.cell_size=100; cfg.full_radius=100; cfg.reduced_radius=200; cfg.proxy_radius=300; cfg.unload_radius=400; cfg.max_loaded_cells=128; cfg.byte_budget=64*1024*1024;
-    WorldPartition world(cfg); world.update({0,0,0}); assert(world.loaded_count()>0); assert(world.resident_bytes()>0); auto origin=world.cell_for({0,0,0}); assert(origin==WorldCellId{0,0,0});
+    WorldPartition world(cfg); world.update({0,0,0}); assert(world.loaded_count()>0); assert(world.resident_bytes()>0); auto origin=world.cell_for({0,0,0}); const WorldCellId expected{0,0,0}; assert(origin==expected);
 
     HlodSystem hlod; hlod.add({1,{0,0,0},10,0,1024,true}); hlod.update({0,0,0}); assert(hlod.nodes().at(1).visible);
 
