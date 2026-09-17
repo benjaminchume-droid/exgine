@@ -11,7 +11,6 @@
 namespace exgine {
 
 enum class TextureFormat : std::uint8_t { R8, RG8, RGB8, RGBA8, R32F, RG32F, RGB32F, RGBA32F };
-
 enum class NoiseType : std::uint8_t { Value, Perlin, Simplex, Fbm, Voronoi, Ridged, Turbulence };
 
 struct Texture2D {
@@ -20,14 +19,14 @@ struct Texture2D {
     std::uint32_t channels = 0;
     TextureFormat format = TextureFormat::RGBA32F;
     std::vector<float> data;
-
     [[nodiscard]] bool valid() const noexcept;
-    [[nodiscard]] std::size_t index(std::uint32_t x, std::uint32_t y,
-                                    std::uint32_t channel = 0) const noexcept;
+    [[nodiscard]] std::size_t index(std::uint32_t x, std::uint32_t y, std::uint32_t channel = 0) const noexcept;
     [[nodiscard]] float get(std::uint32_t x, std::uint32_t y, std::uint32_t channel = 0) const noexcept;
     void set(std::uint32_t x, std::uint32_t y, std::uint32_t channel, float value) noexcept;
 };
 
+// Texture maps are optional at runtime. A material only requires a valid base
+// color map; missing PBR maps are supplied by the renderer with neutral defaults.
 struct TextureSet {
     std::shared_ptr<Texture2D> base_color;
     std::shared_ptr<Texture2D> roughness;
@@ -37,7 +36,6 @@ struct TextureSet {
     std::shared_ptr<Texture2D> emission;
     std::shared_ptr<Texture2D> opacity;
     std::shared_ptr<Texture2D> height;
-
     [[nodiscard]] bool valid() const noexcept;
 };
 
@@ -49,17 +47,9 @@ struct NoiseSettings {
     float lacunarity = 2.0f;
     std::uint64_t seed = 0;
 };
-
-struct TextureGenerationSettings {
-    std::uint32_t width = 256;
-    std::uint32_t height = 256;
-    NoiseSettings noise{};
-};
-
+struct TextureGenerationSettings { std::uint32_t width = 256; std::uint32_t height = 256; NoiseSettings noise{}; };
 [[nodiscard]] float sample_noise(float x, float y, const NoiseSettings& settings) noexcept;
-[[nodiscard]] Texture2D generate_noise_texture(const TextureGenerationSettings& settings,
-                                               std::uint32_t channels = 1);
-[[nodiscard]] TextureSet generate_material_textures(const Material& material,
-                                                     const TextureGenerationSettings& settings);
+[[nodiscard]] Texture2D generate_noise_texture(const TextureGenerationSettings& settings, std::uint32_t channels = 1);
+[[nodiscard]] TextureSet generate_material_textures(const Material& material, const TextureGenerationSettings& settings);
 
 } // namespace exgine
