@@ -19,10 +19,6 @@ jobs:
       - name: Build
         run: cmake --build build --parallel
 
-      - name: Test
-        working-directory: build
-        run: ctest --output-on-failure
-
       - name: Validate generated 3D art resource
         run: |
           test -s build/generated_art/exworld_test_car.obj
@@ -31,6 +27,7 @@ jobs:
           grep -q '^newmtl CarPaint$' build/generated_art/exworld_test_car.mtl
 
       - name: Upload real 3D art resource
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: exgine-real-3d-test-resource
@@ -38,10 +35,15 @@ jobs:
             build/generated_art/exworld_test_car.obj
             build/generated_art/exworld_test_car.mtl
 
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure
+
       - name: Showcase benchmark
         run: ./build/exgine_showcase examples/showcase | tee showcase-metrics.txt
 
       - name: Upload showcase metrics
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: exgine-showcase-metrics
