@@ -42,24 +42,24 @@ bool Renderer::build_frame(const Runtime&rt,RenderFrame&f)const{
  auto ids=rt.state().entities.ids();std::sort(ids.begin(),ids.end());
  for(auto id:ids){
   auto*e=rt.state().entities.get(id);if(!e||!e->active)continue;
-  auto*sn=rt.scene().get(e->scene_node);if(!sn||!sn->active)return false;
+  auto*sn=rt.scene().get(e->scene_node);if(!sn||!sn->active){++f.skipped_draws;continue;}
   const auto em=make_model_matrix(sn->world);
   if(e->geometry){
    for(std::size_t i=0;i<e->geometry->parts.size();++i){
-    const auto&p=e->geometry->parts[i];if(!p.mesh.valid()||p.material_slot.empty())return false;
-    auto res=rt.material_resource(p.material_slot);if(!res||!res->material.valid()||!res->textures||!res->textures->valid())return false;
-    SceneTransform pt{};pt.position=p.position;pt.scale=p.scale;pt.rotation=p.rotation;auto model=multiply(em,make_model_matrix(pt));auto bounds=transform_bounds(mesh_bounds(p.mesh),model);if(!bounds.valid())return false;
-    if(config_.frustum_culling&&!visible(bounds,f.view_projection))continue;
-    RenderDrawCall d;d.entity_id=id;d.scene_node=e->scene_node;d.pass=res->material.opacity<.999f?RenderPass::Transparent:RenderPass::Opaque;d.geometry=e->geometry;d.part_index=i;d.model=model;d.world_bounds=bounds;d.material.material=res->material;d.material.textures=res->textures;if(!d.valid())return false;f.draws.push_back(std::move(d));
+    const auto&p=e->geometry->parts[i];if(!p.mesh.valid()||p.material_slot.empty()){++f.skipped_draws;continue;}
+    auto res=rt.material_resource(p.material_slot);if(!res||!res->material.valid()||!res->textures||!res->textures->valid()){++f.skipped_draws;continue;}
+    SceneTransform pt{};pt.position=p.position;pt.scale=p.scale;pt.rotation=p.rotation;auto model=multiply(em,make_model_matrix(pt));auto bounds=transform_bounds(mesh_bounds(p.mesh),model);if(!bounds.valid()){++f.skipped_draws;continue;}
+    if(config_.frustum_culling&&!visible(bounds,f.view_projection)){++f.culled_draws;continue;}
+    RenderDrawCall d;d.entity_id=id;d.scene_node=e->scene_node;d.pass=res->material.opacity<.999f?RenderPass::Transparent:RenderPass::Opaque;d.geometry=e->geometry;d.part_index=i;d.model=model;d.world_bounds=bounds;d.material.material=res->material;d.material.textures=res->textures;if(!d.valid()){++f.skipped_draws;continue;} f.draws.push_back(std::move(d));
    }
   }
   const auto*sm=rt.skinned_mesh(id);const auto*pose=rt.animation_pose(id);const auto*sk=rt.skeleton(id);
   if(sm||pose||sk){
-   if(!sm||!pose||!sk||!sk->valid()||!pose->valid_for(*sk)||!skinned_payload_valid(*sm))return false;
-   auto material_name=rt.skinned_material(id);auto res=rt.material_resource(material_name);if(!res||!res->material.valid()||!res->textures||!res->textures->valid())return false;
-   if(pose->model.empty()||pose->model.size()>config_.max_bones_per_draw)return false;
+   if(!sm||!pose||!sk||!sk->valid()||!pose->valid_for(*sk)||!skinned_payload_valid(*sm)){++f.skipped_draws;continue;}
+   auto material_name=rt.skinned_material(id);auto res=rt.material_resource(material_name);if(!res||!res->material.valid()||!res->textures||!res->textures->valid()){++f.skipped_draws;continue;}
+   if(pose->model.empty()||pose->model.size()>config_.max_bones_per_draw){++f.skipped_draws;continue;}
    RenderDrawCall d;d.entity_id=id;d.scene_node=e->scene_node;d.pass=res->material.opacity<.999f?RenderPass::Transparent:RenderPass::Opaque;d.skinned_mesh=std::shared_ptr<const SkinnedMesh>(sm,[](const SkinnedMesh*){});d.model=em;d.world_bounds=transform_bounds(skinned_bounds(*sm),em);d.material.material=res->material;d.material.textures=res->textures;d.bone_palette.reserve(pose->model.size());for(const auto&b:pose->model)d.bone_palette.push_back(anim_matrix(b));
-   if(!d.world_bounds.valid()||!d.valid())return false;f.draws.push_back(std::move(d));
+   if(!d.world_bounds.valid()||!d.valid()){++f.skipped_draws;continue;} f.draws.push_back(std::move(d));
   }
  }
  return f.valid();
