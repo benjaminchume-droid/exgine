@@ -10,6 +10,7 @@
 namespace exgine { namespace {
 constexpr GlEnum COLOR=0x4000u,DEPTH=0x100u,DEPTH_TEST=0xB71u,CULL=0xB44u,BLEND=0xBE2u,LESS=0x201u,SRC_ALPHA=0x302u,ONE_MINUS_SRC_ALPHA=0x303u,VS=0x8B31u,FS=0x8B30u,COMPILE=0x8B81u,LINK=0x8B82u,LOG_LEN=0x8B84u,ARRAY=0x8892u,ELEMENT=0x8893u,STATIC_DRAW=0x88E4u,FLOAT=0x1406u,UINT=0x1405u,TRIANGLES=4u,TEX2D=0xDE1u,TEX0=0x84C0u,MIN_FILTER=0x2801u,MAG_FILTER=0x2800u,WRAP_S=0x2802u,WRAP_T=0x2803u,LINEAR=0x2601u,LINEAR_MIPMAP_LINEAR=0x2703u,REPEAT=0x2901u,RGBA8=0x8058u,RGBA=0x1908u,U8=0x1401u;
 std::uint64_t mk(const RenderDrawCall&d)noexcept{return reinterpret_cast<std::uintptr_t>(d.geometry.get())^(reinterpret_cast<std::uintptr_t>(d.skinned_mesh.get())<<1)^d.part_index;}
+std::uint64_t tex_key(const std::shared_ptr<const Texture2D>&t)noexcept{if(!t)return 0;std::uint64_t k=reinterpret_cast<std::uintptr_t>(t.get());k^=static_cast<std::uint64_t>(t->width)*0x9E3779B185EBCA87ull;k^=static_cast<std::uint64_t>(t->height)<<17;k^=static_cast<std::uint64_t>(t->channels)<<33;k^=static_cast<std::uint64_t>(t->data.size())<<41;return k? k:1;}
 GlInt ul(const OpenGLESApi&a,GlUInt p,const char*n)noexcept{return a.GetUniformLocation?a.GetUniformLocation(p,n):-1;}
 std::shared_ptr<const Texture2D> solid(std::initializer_list<float>v){auto t=std::make_shared<Texture2D>();t->width=t->height=1;t->channels=static_cast<std::uint32_t>(v.size());t->format=t->channels==1?TextureFormat::R32F:t->channels==2?TextureFormat::RG32F:t->channels==3?TextureFormat::RGB32F:TextureFormat::RGBA32F;t->data.assign(v);return t;}
 }
