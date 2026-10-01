@@ -99,7 +99,7 @@ AssetPipelineResult AssetPipeline::process(std::string_view uri,
                                            const Loader& loader,
                                            const ImageDecoderRegistry& decoders) const {
     AssetPipelineResult result;
-    result.imported = import_gltf(uri, payload);
+    result.imported = import_gltf(uri, payload, loader);
     if (!result.imported.success) {
         result.error = result.imported.error.empty() ? "asset import failed" : result.imported.error;
         return result;
