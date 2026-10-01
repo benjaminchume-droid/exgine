@@ -53,9 +53,9 @@ struct ImportResult {
 
 [[nodiscard]] ImportFormat detect_import_format(std::string_view uri, std::string_view payload) noexcept;
 [[nodiscard]] ImportResult import_obj(std::string_view uri, std::string_view text);
-using AssetBytesLoader = std::function<bool(std::string_view,std::vector<std::uint8_t>&,std::string&)>;
+using ImportAssetLoader = std::function<bool(std::string_view,std::vector<std::uint8_t>&,std::string&)>;
 [[nodiscard]] ImportResult import_gltf(std::string_view uri, std::string_view text_or_glb);
-[[nodiscard]] ImportResult import_gltf(std::string_view uri, std::string_view text_or_glb, const AssetBytesLoader& loader);
+[[nodiscard]] ImportResult import_gltf(std::string_view uri, std::string_view text_or_glb, const ImportAssetLoader& loader);
 [[nodiscard]] ImportResult import_glb(std::string_view uri, std::string_view binary);
 
 class AssetImporter {
