@@ -7,6 +7,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(EXGINE_BUILD_DEMO "Build the EXGINE desktop demo" ON)
 option(EXGINE_BUILD_TESTS "Build the EXGINE test suite" ON)
 option(EXGINE_BUILD_TOOLS "Build EXGINE content/package tools" ON)
+option(EXGINE_BUILD_ART_RESOURCES "Build EXGINE test 3D art resources" ON)
 add_library(exgine_core
     src/diagnostic.cpp src/ir.cpp src/world.cpp src/open_world.cpp src/world_render.cpp src/performance.cpp src/mobile.cpp src/asset.cpp src/import.cpp src/gltf.cpp src/asset_runtime.cpp src/gpu_residency.cpp
     src/token.cpp src/lexer.cpp src/parser.cpp src/semantic.cpp src/compiler.cpp src/runtime_clean.cpp src/engine.cpp src/editor.cpp
@@ -22,6 +23,36 @@ endif()
 if(EXGINE_BUILD_TOOLS AND NOT ANDROID)
   add_executable(exgpack tools/exgpack.cpp)
   target_link_libraries(exgpack PRIVATE exgine_core)
+
+  add_executable(exgart tools/exgart.cpp)
+  target_link_libraries(exgart PRIVATE exgine_core)
+
+  if(EXGINE_BUILD_ART_RESOURCES)
+    set(EXGINE_ART_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated_art")
+    set(EXGINE_TEST_CAR_OBJ "${EXGINE_ART_OUTPUT_DIR}/exworld_test_car.obj")
+    set(EXGINE_TEST_CAR_MTL "${EXGINE_ART_OUTPUT_DIR}/exworld_test_car.mtl")
+
+    add_custom_command(
+      OUTPUT
+        "${EXGINE_TEST_CAR_OBJ}"
+        "${EXGINE_TEST_CAR_MTL}"
+      COMMAND ${CMAKE_COMMAND} -E make_directory "${EXGINE_ART_OUTPUT_DIR}"
+      COMMAND $<TARGET_FILE:exgart>
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/art_resource/exworld_test_car.exart"
+        "${EXGINE_TEST_CAR_OBJ}"
+        "${EXGINE_TEST_CAR_MTL}"
+      DEPENDS
+        exgart
+        "${CMAKE_CURRENT_SOURCE_DIR}/tests/art_resource/exworld_test_car.exart"
+      VERBATIM
+    )
+
+    add_custom_target(exgine_art_resources ALL
+      DEPENDS
+        "${EXGINE_TEST_CAR_OBJ}"
+        "${EXGINE_TEST_CAR_MTL}"
+    )
+  endif()
 endif()
 if(EXGINE_BUILD_DEMO)
   add_executable(exgine_demo examples/hello_world.cpp)
