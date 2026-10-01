@@ -23,6 +23,21 @@ jobs:
         working-directory: build
         run: ctest --output-on-failure
 
+      - name: Validate generated 3D art resource
+        run: |
+          test -s build/generated_art/exworld_test_car.obj
+          test -s build/generated_art/exworld_test_car.mtl
+          grep -q '^o Body$' build/generated_art/exworld_test_car.obj
+          grep -q '^newmtl CarPaint$' build/generated_art/exworld_test_car.mtl
+
+      - name: Upload real 3D art resource
+        uses: actions/upload-artifact@v4
+        with:
+          name: exgine-real-3d-test-resource
+          path: |
+            build/generated_art/exworld_test_car.obj
+            build/generated_art/exworld_test_car.mtl
+
       - name: Showcase benchmark
         run: ./build/exgine_showcase examples/showcase | tee showcase-metrics.txt
 
